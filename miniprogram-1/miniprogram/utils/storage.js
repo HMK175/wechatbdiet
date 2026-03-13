@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   LOGS: "nutritionApp_logs",
   RANK_PROFILE: "nutritionApp_rankProfile",
   PROFILE: "nutritionApp_profile",
+  FOOD_STATS: "nutritionApp_foodStats",
 };
 
 function loadJSON(key, defaultValue) {

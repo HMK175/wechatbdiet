@@ -1,9 +1,18 @@
 const { STORAGE_KEYS, loadJSON, saveJSON } = require("../../utils/storage");
 
+// 与首页保持一致的内置食物列表（每 100g）
 const BUILT_IN_FOODS = [
-  { id: "egg", name: "鸡蛋", proteinPer100g: 13, carbsPer100g: 1.3, fatPer100g: 11, systemBuiltIn: true },
+  // 鸡蛋相关
+  { id: "egg", name: "鸡蛋（全蛋）", proteinPer100g: 13, carbsPer100g: 1.3, fatPer100g: 11, systemBuiltIn: true },
+  { id: "egg_white", name: "鸡蛋白", proteinPer100g: 11, carbsPer100g: 0.7, fatPer100g: 0.2, systemBuiltIn: true },
+
+  // 常见肉类
   { id: "chicken_leg", name: "鸡腿", proteinPer100g: 18, carbsPer100g: 0, fatPer100g: 8, systemBuiltIn: true },
   { id: "duck_leg", name: "鸭腿", proteinPer100g: 17, carbsPer100g: 0, fatPer100g: 12, systemBuiltIn: true },
+  { id: "pork_lean", name: "猪肉（瘦）", proteinPer100g: 20, carbsPer100g: 0, fatPer100g: 6, systemBuiltIn: true },
+
+  // 主食
+  { id: "noodles", name: "面条", proteinPer100g: 10, carbsPer100g: 70, fatPer100g: 2, systemBuiltIn: true },
   { id: "rice_cooked", name: "米饭（熟）", proteinPer100g: 2.6, carbsPer100g: 28, fatPer100g: 0.3, systemBuiltIn: true },
 ];
 

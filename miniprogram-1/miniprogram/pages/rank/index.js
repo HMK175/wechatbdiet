@@ -14,6 +14,7 @@ Page({
     rankTab: "kcal",
     rankRows: [],
     rankLoading: false,
+    rankError: "",
   },
 
   onLoad() {
@@ -40,6 +41,15 @@ Page({
   },
 
   async fetchRank() {
+    if (!wx.cloud) {
+      this.setData({
+        rankError: "当前小程序未开启云开发环境，排行榜功能暂不可用（不影响本地饮食记录）。",
+        rankRows: [],
+      });
+      wx.showToast({ title: "云开发未初始化，无法加载排行榜", icon: "none" });
+      return;
+    }
+
     this.setData({ rankLoading: true });
     try {
       const res = await wx.cloud.callFunction({
@@ -50,9 +60,12 @@ Page({
         },
       });
       const rows = (res.result && res.result.data) || [];
-      this.setData({ rankRows: rows });
+      this.setData({ rankRows: rows, rankError: "" });
     } catch (e) {
       console.error("fetchRank error:", e);
+      this.setData({
+        rankError: "加载排行榜失败，可能是网络问题或云环境不可用。稍后再试，期间不影响本地记录。",
+      });
       wx.showToast({ title: "加载排行榜失败", icon: "none" });
     } finally {
       this.setData({ rankLoading: false });

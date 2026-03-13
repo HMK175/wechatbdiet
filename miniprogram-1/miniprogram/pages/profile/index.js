@@ -96,7 +96,9 @@ Page({
       wx.showToast({ title: "已保存", icon: "success" });
     } catch (e) {
       console.error("save profile failed", e);
-      wx.showToast({ title: "保存失败", icon: "none" });
+      // 云端保存失败时，至少保证本地可用，避免完全无反馈
+      saveJSON(STORAGE_KEYS.PROFILE, { nickname, avatarUrl: this.data.avatarUrl || "" });
+      wx.showToast({ title: "云端保存失败，已保存到本地", icon: "none" });
     } finally {
       wx.hideLoading();
     }

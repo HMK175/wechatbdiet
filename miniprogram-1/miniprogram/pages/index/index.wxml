@@ -189,13 +189,13 @@
                       data-meal-id="{{item.id}}"
                       bindtap="onToggleFoodDropdown">
                   <view class="picker-text" wx:if="{{formState[item.id].foodIndex >= 0}}">
-                    {{foods[formState[item.id].foodIndex].name}}
+                    {{displayFoods[formState[item.id].foodIndex].name}}
                   </view>
                   <view class="picker-text muted" wx:else>选择食物...</view>
                 </view>
                 <view wx:if="{{openFoodDropdownMealId === item.id}}" class="food-dropdown">
                   <scroll-view scroll-y class="food-dropdown-scroll">
-                    <view wx:for="{{foods}}"
+                    <view wx:for="{{displayFoods}}"
                           wx:for-item="f"
                           wx:for-index="fi"
                           wx:key="id"
@@ -251,7 +251,7 @@
       </view>
 
       <!-- 食物库 -->
-      <view class="section">
+      <view class="section section-compact">
         <view class="section-title-row">
           <view class="section-title">食物库</view>
           <button class="btn btn-outline" bindtap="onOpenFoodsPage">打开</button>
@@ -259,7 +259,7 @@
       </view>
 
       <!-- 排行榜入口 -->
-      <view class="section">
+      <view class="section section-compact">
         <view class="section-title-row">
           <view class="section-title">排行榜</view>
           <button class="btn btn-outline" bindtap="onOpenRankPage">打开</button>

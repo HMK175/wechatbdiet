@@ -3,10 +3,19 @@ const app = getApp();
 const { STORAGE_KEYS, loadJSON, saveJSON } = require("../../utils/storage");
 const { suggestMacrosFromQuotaTable, defaultFatGrams } = require("../../utils/quota");
 
+// 近似取自常见营养成分表（每 100g，可按需微调）
 const BUILT_IN_FOODS = [
-  { id: "egg", name: "鸡蛋", proteinPer100g: 13, carbsPer100g: 1.3, fatPer100g: 11, systemBuiltIn: true },
+  // 鸡蛋相关
+  { id: "egg", name: "鸡蛋（全蛋）", proteinPer100g: 13, carbsPer100g: 1.3, fatPer100g: 11, systemBuiltIn: true },
+  { id: "egg_white", name: "鸡蛋白", proteinPer100g: 11, carbsPer100g: 0.7, fatPer100g: 0.2, systemBuiltIn: true },
+
+  // 常见肉类
   { id: "chicken_leg", name: "鸡腿", proteinPer100g: 18, carbsPer100g: 0, fatPer100g: 8, systemBuiltIn: true },
   { id: "duck_leg", name: "鸭腿", proteinPer100g: 17, carbsPer100g: 0, fatPer100g: 12, systemBuiltIn: true },
+  { id: "pork_lean", name: "猪肉（瘦）", proteinPer100g: 20, carbsPer100g: 0, fatPer100g: 6, systemBuiltIn: true },
+
+  // 主食
+  { id: "noodles", name: "面条", proteinPer100g: 10, carbsPer100g: 70, fatPer100g: 2, systemBuiltIn: true },
   { id: "rice_cooked", name: "米饭（熟）", proteinPer100g: 2.6, carbsPer100g: 28, fatPer100g: 0.3, systemBuiltIn: true },
 ];
 
@@ -108,6 +117,21 @@ function calcDayTotals(dayLog, foods) {
   return { protein, carbs, fat };
 }
 
+function buildDisplayFoods(foods, foodStats) {
+  const stats = foodStats || {};
+  const arr = Array.isArray(foods) ? [...foods] : [];
+  arr.sort((a, b) => {
+    const ua = stats[a.id] || 0;
+    const ub = stats[b.id] || 0;
+    if (ub !== ua) return ub - ua; // 使用次数多的在前
+    const sa = a.systemBuiltIn ? 0 : 1;
+    const sb = b.systemBuiltIn ? 0 : 1;
+    if (sa !== sb) return sa - sb; // 系统内置食物排在自定义前
+    return a.name.localeCompare(b.name, "zh-CN");
+  });
+  return arr;
+}
+
 Page({
   data: {
     loggedIn: false,
@@ -119,6 +143,8 @@ Page({
 
     dateStr: todayStr(),
     foods: [],
+    displayFoods: [],
+    foodStats: {},
     logs: {},
     mealsForToday: [],
     formState: {
@@ -158,6 +184,9 @@ Page({
       this.refreshProfileLabel();
     }
 
+    const foodStats = loadJSON(STORAGE_KEYS.FOOD_STATS, {}) || {};
+    this.setData({ foodStats });
+
     this.initSettings();
     this.initFoodsAndLogs();
   },
@@ -176,6 +205,8 @@ Page({
         logs,
       },
       () => {
+        const displayFoods = buildDisplayFoods(this.data.foods, this.data.foodStats);
+        this.setData({ displayFoods });
         this.updateMealsForToday(dayLog);
       }
     );
@@ -253,9 +284,24 @@ Page({
         logs,
       },
       () => {
+        const displayFoods = buildDisplayFoods(this.data.foods, this.data.foodStats);
+        this.setData({ displayFoods });
         this.updateMealsForToday(dayLog);
       }
     );
+  },
+
+  rebuildDisplayFoods() {
+    const displayFoods = buildDisplayFoods(this.data.foods, this.data.foodStats);
+    this.setData({ displayFoods });
+  },
+
+  bumpFoodUsage(foodId) {
+    if (!foodId) return;
+    const stats = { ...(this.data.foodStats || {}) };
+    stats[foodId] = (stats[foodId] || 0) + 1;
+    this.setData({ foodStats: stats });
+    saveJSON(STORAGE_KEYS.FOOD_STATS, stats);
   },
 
   onLoginTap() {
@@ -474,6 +520,33 @@ Page({
 
   onSaveSettingsTap() {
     const settings = normalizeSettings(this.data.settings);
+
+    // 基础防呆：数值范围简单校验，避免极端配置导致统计结果失真
+    if (settings.heightCm < 130 || settings.heightCm > 220) {
+      wx.showToast({ title: "身高建议在 130–220 cm 之间", icon: "none" });
+      return;
+    }
+    if (settings.weightKg < 30 || settings.weightKg > 200) {
+      wx.showToast({ title: "体重建议在 30–200 kg 之间", icon: "none" });
+      return;
+    }
+    if (settings.proteinPerKg <= 0 || settings.proteinPerKg > 4) {
+      wx.showToast({ title: "蛋白建议在 0–4 g/kg 之间", icon: "none" });
+      return;
+    }
+    if (settings.carbsTrainingPerKg < 0 || settings.carbsTrainingPerKg > 8) {
+      wx.showToast({ title: "训练日碳水建议在 0–8 g/kg 之间", icon: "none" });
+      return;
+    }
+    if (settings.carbsRestPerKg < 0 || settings.carbsRestPerKg > 6) {
+      wx.showToast({ title: "休息日碳水建议在 0–6 g/kg 之间", icon: "none" });
+      return;
+    }
+    if (settings.fatGrams < 10 || settings.fatGrams > 200) {
+      wx.showToast({ title: "每日脂肪建议在 10–200 g 之间", icon: "none" });
+      return;
+    }
+
     saveJSON(STORAGE_KEYS.SETTINGS, settings);
     this.setData({ settings });
     const dayLog = getOrCreateDayLog(this.data.logs, this.data.dateStr);
@@ -551,10 +624,35 @@ Page({
     const index = Number(e.currentTarget.dataset.index);
     if (!mealId || !Number.isFinite(index)) return;
     const key = `formState.${mealId}.foodIndex`;
-    this.setData({
+
+    const displayFoods = this.data.displayFoods || [];
+    const food = displayFoods[index];
+
+    // 默认重量记忆：带出当天该餐最近一次使用该食物的克数
+    let lastGrams = "";
+    if (food && this.data.logs && this.data.dateStr) {
+      const logs = this.data.logs;
+      const dayLog = getOrCreateDayLog(logs, this.data.dateStr);
+      const meal = (dayLog.meals || []).find((m) => m.id === mealId);
+      if (meal && Array.isArray(meal.entries)) {
+        for (let i = meal.entries.length - 1; i >= 0; i--) {
+          const en = meal.entries[i];
+          if (en && en.foodId === food.id && en.grams) {
+            lastGrams = String(en.grams);
+            break;
+          }
+        }
+      }
+    }
+
+    const next = {
       [key]: index,
       openFoodDropdownMealId: "",
-    });
+    };
+    if (lastGrams) {
+      next[`formState.${mealId}.grams`] = lastGrams;
+    }
+    this.setData(next);
   },
 
   onGramsInput(e) {
@@ -570,9 +668,9 @@ Page({
   onAddEntryTap(e) {
     const mealId = e.currentTarget.dataset.mealId;
     const form = this.data.formState[mealId] || { foodIndex: -1, grams: "" };
-    const { foods, logs, dateStr } = this.data;
+    const { displayFoods, logs, dateStr } = this.data;
 
-    if (form.foodIndex < 0 || form.foodIndex >= foods.length) {
+    if (form.foodIndex < 0 || form.foodIndex >= displayFoods.length) {
       wx.showToast({ title: "请选择食物", icon: "none" });
       return;
     }
@@ -582,7 +680,7 @@ Page({
       return;
     }
 
-    const food = foods[form.foodIndex];
+    const food = displayFoods[form.foodIndex];
     const dayLog = getOrCreateDayLog(logs, dateStr);
     const meal = dayLog.meals.find((m) => m.id === mealId);
     if (!meal) return;
@@ -596,6 +694,7 @@ Page({
     });
 
     saveJSON(STORAGE_KEYS.LOGS, logs);
+    this.bumpFoodUsage(food.id);
 
     const resetKey = `formState.${mealId}.grams`;
     this.setData(
@@ -692,6 +791,7 @@ Page({
         foodForm: { name: "", protein: "", carbs: "", fat: "" },
       },
       () => {
+        this.rebuildDisplayFoods();
         const logs = this.data.logs;
         const dayLog = getOrCreateDayLog(logs, this.data.dateStr);
         this.updateMealsForToday(dayLog);

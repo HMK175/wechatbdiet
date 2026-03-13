@@ -20,9 +20,15 @@
     <button class="btn btn-outline" bindtap="fetchRank">刷新榜单</button>
   </view>
 
+  <view wx:if="{{rankError}}" class="hint">
+    {{rankError}}
+  </view>
+
   <view class="rank-list">
     <view wx:if="{{rankLoading}}" class="rank-status">加载中...</view>
-    <view wx:elif="{{!rankRows.length}}" class="rank-status">暂无数据</view>
+    <view wx:elif="{{!rankRows.length}}" class="rank-status">
+      {{rankError || '暂无数据'}}
+    </view>
     <view wx:else>
       <block wx:if="{{rankTab === 'kcal'}}">
         <view wx:for="{{rankRows}}"
