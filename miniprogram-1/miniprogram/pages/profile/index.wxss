@@ -1,0 +1,87 @@
+page {
+  background: #f5f7fb;
+}
+
+.page {
+  padding: 16rpx 12rpx 24rpx;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18rpx;
+  padding: 14rpx 12rpx;
+  box-shadow: 0 12rpx 40rpx rgba(15, 35, 71, 0.08);
+}
+
+.title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #222;
+}
+
+.row {
+  margin-top: 12rpx;
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+}
+
+.label {
+  font-size: 22rpx;
+  color: #777;
+  margin-bottom: 4rpx;
+}
+
+.input {
+  padding: 10rpx 14rpx;
+  border-radius: 999rpx;
+  border: 1px solid #dde3f3;
+  background: #ffffff;
+  font-size: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10rpx;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.btn {
+  height: 72rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24rpx;
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: #2f80ed;
+  border: 1px solid #d1e2ff;
+}
+
+.btn-primary {
+  background: #2f80ed;
+  color: #ffffff;
+}
+
+.hint {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #777;
+  line-height: 1.6;
+}
+

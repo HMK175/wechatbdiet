@@ -1,0 +1,125 @@
+page {
+  background: #f5f7fb;
+}
+
+.page {
+  padding: 16rpx 12rpx 24rpx;
+}
+
+.rank-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.date-pill {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #f1f4ff;
+  font-size: 24rpx;
+  color: #2f80ed;
+}
+
+.rank-tabs {
+  display: flex;
+  border-radius: 999rpx;
+  border: 1px solid #dde3f3;
+  overflow: hidden;
+}
+
+.rank-tab {
+  padding: 8rpx 16rpx;
+  font-size: 22rpx;
+  color: #777;
+  background: #ffffff;
+}
+
+.rank-tab.active {
+  background: #e3f0ff;
+  color: #2f80ed;
+  font-weight: 600;
+}
+
+.btn {
+  height: 70rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: #2f80ed;
+  border: 1px solid #d1e2ff;
+}
+
+.btn-primary {
+  background: #2f80ed;
+  color: #ffffff;
+}
+
+.rank-list {
+  margin-top: 14rpx;
+  border-radius: 18rpx;
+  background: #f8f9fd;
+  max-height: 520rpx;
+  overflow-y: auto;
+}
+
+.rank-status {
+  padding: 16rpx;
+  font-size: 22rpx;
+  color: #777;
+}
+
+.rank-row {
+  padding: 12rpx 14rpx;
+  border-bottom: 1px solid #e2e7f3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rank-main {
+  max-width: 70%;
+}
+
+.rank-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.avatar {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+  flex: 0 0 auto;
+}
+
+.rank-name {
+  font-size: 24rpx;
+  color: #333;
+}
+
+.rank-sub {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #777;
+}
+
+.rank-extra {
+  font-size: 22rpx;
+  color: #555;
+}
+
+.hint {
+  font-size: 20rpx;
+  color: #888;
+}
+

@@ -1,0 +1,53 @@
+<view class="page">
+  <view class="section-title">新增自定义食物</view>
+  <view class="food-form">
+    <input class="food-input"
+           placeholder="名称，如：鸡胸肉"
+           value="{{foodForm.name}}"
+           bindinput="onFoodNameInput" />
+    <view class="food-macros-row">
+      <input class="food-macro-input"
+             type="number"
+             placeholder="蛋白 /100g"
+             value="{{foodForm.protein}}"
+             bindinput="onFoodProteinInput" />
+      <input class="food-macro-input"
+             type="number"
+             placeholder="碳水 /100g"
+             value="{{foodForm.carbs}}"
+             bindinput="onFoodCarbsInput" />
+      <input class="food-macro-input"
+             type="number"
+             placeholder="脂肪 /100g"
+             value="{{foodForm.fat}}"
+             bindinput="onFoodFatInput" />
+    </view>
+    <button class="btn btn-primary" bindtap="onSaveFoodTap">保存到我的食物</button>
+  </view>
+
+  <view class="section-title">全部食物</view>
+  <scroll-view scroll-y class="foods-list">
+    <view wx:for="{{foods}}"
+          wx:key="id"
+          class="food-row">
+      <view class="food-main">
+        <view class="food-name">
+          {{item.name}}
+          <text class="food-tag" wx:if="{{item.systemBuiltIn}}">系统</text>
+          <text class="food-tag user" wx:else>我的</text>
+        </view>
+        <view class="food-sub">
+          每 100g：P {{item.proteinPer100g}} · C {{item.carbsPer100g}} · F {{item.fatPer100g}}
+        </view>
+      </view>
+      <button wx:if="{{!item.systemBuiltIn}}"
+              class="btn btn-danger"
+              size="mini"
+              data-id="{{item.id}}"
+              bindtap="onDeleteFoodTap">
+        删除
+      </button>
+    </view>
+  </scroll-view>
+</view>
+

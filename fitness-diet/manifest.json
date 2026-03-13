@@ -1,0 +1,8 @@
+{
+  "name": "饮食记录与营养计算",
+  "short_name": "饮食记录",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff"
+}

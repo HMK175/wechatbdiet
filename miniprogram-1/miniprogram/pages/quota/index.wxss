@@ -1,0 +1,103 @@
+page {
+  background: #f5f7fb;
+}
+
+.page {
+  padding: 16rpx 12rpx 24rpx;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.segmented {
+  flex: 1;
+  display: flex;
+  border-radius: 999rpx;
+  border: 1px solid #dde3f3;
+  overflow: hidden;
+}
+
+.seg-btn {
+  flex: 1;
+  text-align: center;
+  padding: 10rpx 0;
+  font-size: 24rpx;
+  color: #777;
+  background: #ffffff;
+}
+
+.seg-btn.active {
+  background: #e3f0ff;
+  color: #2f80ed;
+  font-weight: 600;
+}
+
+.table-wrap {
+  max-height: 900rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(15, 35, 71, 0.08);
+}
+
+.table {
+  min-width: 100%;
+}
+
+.row {
+  display: flex;
+}
+
+.row.header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.cell {
+  flex: 1;
+  min-width: 140rpx;
+  border-bottom: 1px solid #eef1f7;
+  border-right: 1px solid #eef1f7;
+  padding: 8rpx 6rpx;
+  font-size: 22rpx;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.cell.head {
+  background: #f8f9fd;
+  font-weight: 600;
+  color: #556;
+}
+
+.row .cell:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.line1 {
+  font-weight: 600;
+  color: #222;
+}
+
+.line2 {
+  font-size: 20rpx;
+  color: #777;
+}
+
+.empty {
+  color: #ccc;
+}
+
+.hint {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #777;
+  line-height: 1.6;
+}
+

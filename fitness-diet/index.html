@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>饮食记录与营养计算</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="manifest" href="manifest.json" />
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --primary: #2f80ed;
+      --primary-soft: #e3f0ff;
+      --danger: #eb5757;
+      --text-main: #222222;
+      --text-muted: #777777;
+      --border: #e0e4ee;
+      --radius: 12px;
+      --shadow-soft: 0 6px 18px rgba(15, 35, 71, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 12px 40px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 2px 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    header small {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .date-picker {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .date-picker label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .date-picker input[type="date"] {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #fff;
+      color: var(--text-main);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 12px 12px 10px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-header small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .form-group input,
+    .form-group select {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-size: 13px;
+      outline: none;
+      background: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(47, 128, 237, 0.18);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary-soft);
+    }
+
+    .btn-danger-outline {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(235, 87, 87, 0.22);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .segmented {
+      display: inline-flex;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      overflow: hidden;
+      width: fit-content;
+    }
+
+    .segmented button {
+      border: none;
+      background: transparent;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-muted);
+      min-width: 72px;
+    }
+
+    .segmented button.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      z-index: 999;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 520px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+      overflow: hidden;
+      max-height: 86vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .modal-header .title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .modal-body {
+      padding: 10px 12px 12px;
+      overflow: auto;
+    }
+
+    .quota-grid {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .quota-grid table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .quota-grid th,
+    .quota-grid td {
+      border-bottom: 1px solid #eef1f7;
+      border-right: 1px solid #eef1f7;
+      padding: 6px 6px;
+      vertical-align: middle;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .quota-grid th {
+      position: sticky;
+      top: 0;
+      background: #f8f9fd;
+      z-index: 1;
+      font-weight: 700;
+      color: #556;
+    }
+
+    .quota-grid td:first-child,
+    .quota-grid th:first-child {
+      position: sticky;
+      left: 0;
+      background: #f8f9fd;
+      z-index: 2;
+      font-weight: 700;
+      color: #556;
+    }
+
+    .quota-cell {
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      width: 100%;
+      color: inherit;
+      font: inherit;
+    }
+
+    .quota-cell .line1 {
+      font-weight: 700;
+      color: #222;
+    }
+
+    .quota-cell .line2 {
+      font-size: 10px;
+      color: #777;
+    }
+
+    .quota-hint {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.5;
+      margin: 10px 0 0;
+    }
+
+    .targets-summary {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .target-chip {
+      flex: 1;
+      min-width: 0;
+      background: #f8f9fd;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+    }
+
+    .target-chip span.value {
+      font-weight: 600;
+      color: var(--text-main);
+      margin-left: 4px;
+    }
+
+    .macro-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .macro-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .macro-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .macro-name {
+      font-weight: 500;
+    }
+
+    .macro-values {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      border-radius: 999px;
+      background: #eceff5;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #2f80ed, #56ccf2);
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.25s ease-out;
+    }
+
+    .progress-bar.over {
+      background: linear-gradient(90deg, #eb5757, #f2994a);
+    }
+
+    .meal {
+      border-radius: 10px;
+      background: #f8f9fd;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .meal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .meal-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .meal-subtotal {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .meal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .meal-form-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .meal-form-row select {
+      flex: 2;
+    }
+
+    .meal-form-row input {
+      flex: 1;
+    }
+
+    .entries {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      background: #fff;
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: 1px solid #e3e7f2;
+    }
+
+    .entry-main {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .entry-name {
+      font-weight: 500;
+    }
+
+    .entry-macros {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .entry-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px 0 6px;
+      color: var(--text-muted);
+    }
+
+    .divider {
+      margin: 6px -12px 0;
+      border-top: 1px dashed #e0e4ee;
+    }
+
+    .foods-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .food-item {
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: #f8f9fd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .food-name {
+      font-weight: 500;
+    }
+
+    .food-macros {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .tag {
+      font-size: 10px;
+      border-radius: 999px;
+      padding: 1px 6px;
+      border: 1px solid #dde2f0;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .tag-user {
+      border-color: rgba(47, 128, 237, 0.4);
+      color: var(--primary);
+      background: #ecf4ff;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: auto;
+      background: #fff;
+    }
+
+    table.rank-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      min-width: 520px;
+    }
+
+    table.rank-table th,
+    table.rank-table td {
+      border-bottom: 1px solid #eef1f7;
+      padding: 8px 8px;
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    table.rank-table th {
+      position: sticky;
+      top: 0;
+      background: #f8f9fd;
+      z-index: 1;
+      font-weight: 700;
+      color: #556;
+    }
+
+    .rank-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .rank-toolbar .left,
+    .rank-toolbar .right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .rank-note {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .rank-mine {
+      border: 1px dashed #d9e2f5;
+      background: #f8fbff;
+      border-radius: 12px;
+      padding: 10px;
+      margin: 10px 0 12px;
+    }
+
+    .rank-mine .title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #345;
+    }
+
+    @media (max-width: 480px) {
+      .app {
+        max-width: 100%;
+        padding: 10px 10px 32px;
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .date-picker {
+        align-items: flex-start;
+      }
+      .form-row {
+        flex-direction: column;
+      }
+      .meal-form-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>饮食记录</h1>
+      <small>三大营养素 · 本地离线</small>
+    </div>
+    <div class="date-picker">
+      <label for="dateInput">日期</label>
+      <input type="date" id="dateInput" />
+      <div style="margin-top:6px;display:flex;justify-content:flex-end;">
+        <button id="topAuthBtn" class="btn btn-outline" type="button" style="padding:4px 10px;font-size:12px;">登录</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="card" id="settingsCard">
+    <div class="card-header">
+      <h2>基础配置</h2>
+      <small>体重与三大营养素目标</small>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="heightInput">身高 (cm)</label>
+        <input id="heightInput" type="number" min="120" max="220" step="1" />
+      </div>
+      <div class="form-group">
+        <label for="weightInput">体重 (kg)</label>
+        <input id="weightInput" type="number" min="30" max="200" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="genderSelect">性别</label>
+        <select id="genderSelect">
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="phaseSelect">阶段</label>
+        <select id="phaseSelect">
+          <option value="bulk">增肌</option>
+          <option value="cut">减脂</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>训练/休息日</label>
+        <div class="segmented" role="tablist" aria-label="训练/休息日切换">
+          <button id="dayTypeTrainingBtn" type="button">训练日</button>
+          <button id="dayTypeRestBtn" type="button">休息日</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;width:100%;">
+          <button id="viewQuotaBtn" class="btn btn-outline" type="button">查看配额表</button>
+          <button id="saveSettingsBtn" class="btn btn-primary" type="button">保存配置</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="proteinPerKgInput">蛋白质 (g/kg)</label>
+        <input id="proteinPerKgInput" type="number" min="0" max="5" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="carbsTrainingPerKgInput">训练日碳水 (g/kg)</label>
+        <input id="carbsTrainingPerKgInput" type="number" min="0" max="10" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="carbsRestPerKgInput">休息日碳水 (g/kg)</label>
+        <input id="carbsRestPerKgInput" type="number" min="0" max="10" step="0.1" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="fatGramsInput">脂肪目标 (g/天)</label>
+        <input id="fatGramsInput" type="number" min="0" max="250" step="1" />
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button id="autoFromQuotaBtn" class="btn btn-outline" type="button">按配额表自动填写</button>
+      </div>
+    </div>
+    <div class="targets-summary" id="targetsSummary"></div>
+  </section>
+
+  <div class="modal-backdrop" id="quotaModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="配额表">
+      <div class="modal-header">
+        <div class="title">碳水/蛋白配额表（g/kg）</div>
+        <button class="btn btn-danger-outline" type="button" id="closeQuotaModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row" style="margin-bottom:10px;">
+          <div class="form-group">
+            <label>性别</label>
+            <div class="segmented">
+              <button id="quotaGenderMaleBtn" type="button">男性</button>
+              <button id="quotaGenderFemaleBtn" type="button">女性</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>阶段</label>
+            <div class="segmented">
+              <button id="quotaPhaseBulkBtn" type="button">增肌</button>
+              <button id="quotaPhaseCutBtn" type="button">减脂</button>
+            </div>
+          </div>
+        </div>
+        <div class="quota-grid" id="quotaGrid"></div>
+        <div class="quota-hint">
+          每个格子的三个数字分别是：<b>训练日碳水 / 休息日碳水 / 每日蛋白</b>（单位：g/kg 体重）。<br/>
+          点击某个格子会把倍率写入上面的“基础配置”。脂肪目标按你的规则（g/天）自动给默认值，你也可以手动改。
+          <div style="margin-top:8px;color:#777;">
+            数据来源：B 站「好人松松」 · 主页：
+            <a href="https://space.bilibili.com/2078781964?spm_id_from=333.337.0.0" target="_blank" rel="noreferrer">https://space.bilibili.com/2078781964</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="card" id="summaryCard">
+    <div class="card-header">
+      <h2>今日统计</h2>
+      <small>与目标对比</small>
+    </div>
+    <div class="macro-row" id="daySummary"></div>
+  </section>
+
+  <section class="card" id="mealsCard">
+    <div class="card-header">
+      <h2>今日用餐</h2>
+      <small>记录每一餐的食物</small>
+    </div>
+    <div id="mealsContainer"></div>
+  </section>
+
+  <section class="card" id="foodsCard">
+    <div class="card-header">
+      <h2>食物库</h2>
+      <small>每 100g 的营养信息</small>
+    </div>
+    <div class="section-title">新增自定义食物</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="foodNameInput">名称</label>
+        <input id="foodNameInput" type="text" placeholder="例如：自制鸡蛋饼" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="foodProteinInput">蛋白质 /100g</label>
+        <input id="foodProteinInput" type="number" min="0" max="100" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="foodCarbsInput">碳水 /100g</label>
+        <input id="foodCarbsInput" type="number" min="0" max="100" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label for="foodFatInput">脂肪 /100g</label>
+        <input id="foodFatInput" type="number" min="0" max="100" step="0.1" />
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:2px;">
+      <button id="addFoodBtn" class="btn btn-outline" type="button">保存到我的食物</button>
+      <button id="cancelEditFoodBtn" class="btn btn-danger-outline" type="button" style="display:none;">取消编辑</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-title">全部食物</div>
+    <div class="foods-list" id="foodsList"></div>
+  </section>
+
+  <section class="card" id="rankCard">
+    <div class="card-header">
+      <h2>排行榜</h2>
+      <small>今日 kcal · 三大项力量</small>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+      <button id="openRankModalBtn" class="btn btn-primary" type="button">打开排行榜</button>
+    </div>
+    <div class="rank-note">说明：需登录后才能上传自己的数据；查看榜单不强制登录。</div>
+  </section>
+
+  <div class="modal-backdrop" id="authModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="登录">
+      <div class="modal-header">
+        <div class="title">登录</div>
+        <button class="btn btn-danger-outline" type="button" id="closeAuthModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12px;color:#666;line-height:1.6;margin-bottom:10px;">
+          使用邮箱 + 密码登录（Supabase）。不开放注册；只有预置账号可登录。
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="loginEmailInput">邮箱</label>
+            <input id="loginEmailInput" type="email" placeholder="your@email.com" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="loginPasswordInput">密码</label>
+            <input id="loginPasswordInput" type="password" placeholder="••••••••" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="loginBtn" class="btn btn-primary" type="button">登录</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#888;line-height:1.5;">
+          登录成功后会弹出同步方式选择（云端覆盖 / 本地覆盖 / 合并）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="profileModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="账号">
+      <div class="modal-header">
+        <div class="title">账号</div>
+        <button class="btn btn-danger-outline" type="button" id="closeProfileModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div id="profileInfo" style="font-size:12px;color:#666;line-height:1.6;margin-bottom:10px;"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nicknameInput">昵称</label>
+            <input id="nicknameInput" type="text" placeholder="想显示的名字" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="saveNicknameBtn" class="btn btn-outline" type="button">保存昵称</button>
+              <button id="syncNowBtn" class="btn btn-primary" type="button">立即同步</button>
+              <button id="logoutBtn" class="btn btn-danger-outline" type="button">退出登录</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#888;line-height:1.5;">
+          昵称将保存到账号资料（Supabase user metadata），登录同一账号的所有设备都会显示一致。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="syncModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="同步选择">
+      <div class="modal-header">
+        <div class="title">同步数据</div>
+        <button class="btn btn-danger-outline" type="button" id="closeSyncModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div id="syncSummary" style="font-size:12px;color:#555;line-height:1.6;margin-bottom:10px;"></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="syncUseCloudBtn" class="btn btn-primary" type="button">使用云端覆盖本地</button>
+          <button id="syncUseLocalBtn" class="btn btn-outline" type="button">使用本地覆盖云端</button>
+          <button id="syncMergeBtn" class="btn btn-outline" type="button">合并（推荐）</button>
+        </div>
+        <div style="font-size:11px;color:#888;line-height:1.5;margin-top:10px;">
+          - 覆盖：会完全替换另一端的数据。<br/>
+          - 合并：保留双方食物与记录；配置以本地为主（你也可以之后手动改）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="rankModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="排行榜">
+      <div class="modal-header">
+        <div class="title">排行榜</div>
+        <button class="btn btn-danger-outline" type="button" id="closeRankModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="rank-toolbar">
+          <div class="left">
+            <div class="segmented" role="tablist" aria-label="排行榜类型">
+              <button id="rankTabKcalBtn" type="button">今日 kcal</button>
+              <button id="rankTabStrengthBtn" type="button">力量（三大项）</button>
+            </div>
+          </div>
+          <div class="right">
+            <div class="form-group" style="margin:0;min-width:170px;">
+              <label style="margin:0 0 2px;">排序</label>
+              <select id="rankSortSelect">
+                <option value="kcal_desc">kcal（高→低）</option>
+                <option value="bw_asc">体重（低→高）</option>
+                <option value="bw_desc">体重（高→低）</option>
+                <option value="bench_desc">卧推 1RM（高→低）</option>
+                <option value="deadlift_desc">硬拉 1RM（高→低）</option>
+                <option value="squat_desc">深蹲 1RM（高→低）</option>
+                <option value="total_desc">三项总和/体重（高→低）</option>
+              </select>
+            </div>
+            <button id="rankRefreshBtn" class="btn btn-outline" type="button">刷新</button>
+            <button id="openRankInputModalBtn" class="btn btn-primary" type="button" style="display:none;">我的数据</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="rank-table" id="rankTable"></table>
+        </div>
+        <div class="rank-note" id="rankStatus"></div>
+        <div class="rank-note" id="rankViewHint">提示：点击“我的数据”可以录入并上传你的今日数据；体重默认读取主页面配置。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="rankInputModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="我的数据">
+      <div class="modal-header">
+        <div class="title">我的数据</div>
+        <button class="btn btn-danger-outline" type="button" id="closeRankInputModalBtn">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="rank-note" id="rankInputHint"></div>
+
+        <div class="section-title">卧推</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rankBenchDirect1rmInput">卧推 1RM（可直接填）</label>
+            <input id="rankBenchDirect1rmInput" type="number" min="0" max="600" step="0.5" placeholder="不填则按做组计算" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rankBenchWeightInput">做组重量 (kg)</label>
+            <input id="rankBenchWeightInput" type="number" min="0" max="600" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label for="rankBenchRepsInput">次数</label>
+            <input id="rankBenchRepsInput" type="number" min="1" max="30" step="1" />
+          </div>
+          <div class="form-group">
+            <label for="rankBenchSetsInput">组数</label>
+            <input id="rankBenchSetsInput" type="number" min="1" max="20" step="1" />
+          </div>
+        </div>
+
+        <div class="section-title">硬拉</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rankDeadliftDirect1rmInput">硬拉 1RM（可直接填）</label>
+            <input id="rankDeadliftDirect1rmInput" type="number" min="0" max="800" step="0.5" placeholder="不填则按做组计算" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rankDeadliftWeightInput">做组重量 (kg)</label>
+            <input id="rankDeadliftWeightInput" type="number" min="0" max="800" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label for="rankDeadliftRepsInput">次数</label>
+            <input id="rankDeadliftRepsInput" type="number" min="1" max="30" step="1" />
+          </div>
+          <div class="form-group">
+            <label for="rankDeadliftSetsInput">组数</label>
+            <input id="rankDeadliftSetsInput" type="number" min="1" max="20" step="1" />
+          </div>
+        </div>
+
+        <div class="section-title">深蹲</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rankSquatDirect1rmInput">深蹲 1RM（可直接填）</label>
+            <input id="rankSquatDirect1rmInput" type="number" min="0" max="800" step="0.5" placeholder="不填则按做组计算" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rankSquatWeightInput">做组重量 (kg)</label>
+            <input id="rankSquatWeightInput" type="number" min="0" max="800" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label for="rankSquatRepsInput">次数</label>
+            <input id="rankSquatRepsInput" type="number" min="1" max="30" step="1" />
+          </div>
+          <div class="form-group">
+            <label for="rankSquatSetsInput">组数</label>
+            <input id="rankSquatSetsInput" type="number" min="1" max="20" step="1" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button id="rankSaveLocalBtn" class="btn btn-outline" type="button">保存到本地</button>
+          <button id="rankUploadTodayBtn" class="btn btn-primary" type="button">上传/更新今日数据</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    所有数据仅保存在本地浏览器，可放心使用。
+  </div>
+</div>
+
+<script defer>
+  const STORAGE_KEYS = {
+    SETTINGS: "nutritionApp_settings",
+    FOODS: "nutritionApp_foods",
+    LOGS: "nutritionApp_logs",
+    RANK_PROFILE: "nutritionApp_rankProfile"
+  };
+
+  // ===== Supabase 在线同步配置（可选）=====
+  // 使用“邮箱 OTP（登录链接/验证码）”登录，并且 shouldCreateUser=false 来禁止注册。
+  // 你需要在这里填入 Supabase 项目参数；不填则自动隐藏“在线同步”区域。
+  const SUPABASE_URL = "https://vedsvbpmyunvtnxenzab.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_Cj_GHZ9A_qC_TMfVuzEc0Q_k9wtLhr5";
+  const SUPABASE_USER_DATA_TABLE = "user_data";
+  const SUPABASE_RANK_TABLE = "public_leaderboard_daily";
+
+  function isSupabaseConfigured() {
+    return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient);
+  }
+
+  function initSupabase() {
+    if (!isSupabaseConfigured()) return null;
+    return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  let sb = null;
+  let cloudCache = null;
+  let currentSession = null; // 缓存当前登录会话，避免点击按钮时完全无反应
+
+  const DEFAULT_SETTINGS = {
+    heightCm: 170,
+    weightKg: 60,
+    gender: "male", // male | female
+    phase: "bulk", // bulk(增肌) | cut(减脂)
+    dayType: "training", // training | rest
+    proteinPerKg: 1.6,
+    carbsTrainingPerKg: 4.0,
+    carbsRestPerKg: 3.0,
+    fatGrams: 70
+  };
+
+  const QUOTA_DIMENSIONS = {
+    male: {
+      bulk: { heights: [160,165,170,175,180,185,190], weights: [50,55,60,65,70,75,80,85,90,95] },
+      cut:  { heights: [160,165,170,175,180,185,190], weights: [50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130] }
+    },
+    female: {
+      bulk: { heights: [150,155,160,165,170,175,180], weights: [40,45,50,55,60,65,70,75,80] },
+      cut:  { heights: [150,155,160,165,170,175,180], weights: [40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120] }
+    }
+  };
+
+  function clamp(n, min, max) {
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function defaultFatGrams(gender, phase) {
+    if (gender === "male") return phase === "bulk" ? 70 : 60;
+    return phase === "bulk" ? 60 : 50;
+  }
+
+  // 配额表（来源：你提供的 PDF）。格式：weight,height,value(训练碳/休息碳/蛋白)
+  // 注意：PDF 内有两个明显错误：`4.8/38/2.1`（应为 4.8/3.8/2.1）与 `#VALUE!`（视为缺失）
+  const QUOTA_RAW = {
+    male: {
+      cut: `
+60,160,2.6/2.0/1.4
+65,160,2.6/1.9/1.4
+65,165,2.6/2.0/1.4
+70,160,2.5/1.9/1.3
+70,165,2.5/2.0/1.4
+70,170,2.6/2.0/1.4
+70,175,2.7/2.1/1.4
+75,160,2.4/1.9/1.3
+75,165,2.5/2.0/1.3
+75,170,2.5/2.0/1.4
+75,175,2.6/2.1/1.4
+75,180,2.7/2.1/1.4
+80,160,2.4/1.9/1.3
+80,165,2.4/1.9/1.3
+80,170,2.5/2.0/1.3
+80,175,2.5/2.0/1.4
+80,180,2.6/2.1/1.4
+80,185,2.6/2.1/1.4
+85,160,2.3/1.8/1.2
+85,165,2.4/1.9/1.3
+85,170,2.4/1.9/1.3
+85,175,2.5/2.0/1.3
+85,180,2.5/2.0/1.4
+85,185,2.6/2.1/1.4
+85,190,2.6/2.2/1.4
+90,160,2.3/1.8/1.2
+90,165,2.3/1.8/1.2
+90,170,2.4/1.9/1.3
+90,175,2.4/2.0/1.3
+90,180,2.5/2.0/1.3
+90,185,2.5/2.1/1.4
+90,190,2.6/2.1/1.4
+95,160,2.2/1.8/1.2
+95,165,2.3/1.8/1.2
+95,170,2.3/1.9/1.2
+95,175,2.4/1.9/1.3
+95,180,2.4/2.0/1.3
+95,185,2.5/2.0/1.3
+95,190,2.5/2.1/1.3
+100,160,2.2/1.8/1.2
+100,165,2.2/1.8/1.2
+100,170,2.3/1.9/1.2
+100,175,2.3/1.9/1.2
+100,180,2.3/1.9/1.2
+100,185,2.4/2.0/1.3
+100,190,2.5/2.1/1.3
+105,160,2.1/1.8/1.2
+105,165,2.2/1.8/1.2
+105,170,2.2/1.9/1.2
+105,175,2.3/1.9/1.2
+105,180,2.3/1.9/1.2
+105,185,2.4/2.0/1.3
+105,190,2.4/2.0/1.3
+110,160,2.1/1.8/1.1
+110,165,2.2/1.8/1.2
+110,170,2.2/1.9/1.2
+110,175,2.2/1.9/1.2
+110,180,2.3/1.9/1.2
+110,185,2.3/2.0/1.3
+110,190,2.4/2.0/1.3
+115,160,2.1/1.7/1.1
+115,165,2.1/1.8/1.1
+115,170,2.2/1.8/1.2
+115,175,2.2/1.9/1.2
+115,180,2.2/1.9/1.2
+115,185,2.3/1.9/1.2
+115,190,2.3/2.0/1.3
+120,160,1.9/1.6/1.0
+120,165,2/1.6/1.1
+120,170,2.0/1.7/1.1
+120,175,2.1/1.7/1.1
+120,180,2.1/1.8/1.1
+120,185,2.1/1.8/1.1
+120,190,2.2/1.8/1.2
+125,160,1.9/1.6/1.0
+125,165,2/1.6/1.1
+125,170,2.0/1.7/1.1
+125,175,2.0/1.7/1.1
+125,180,2.1/1.8/1.1
+125,185,2.1/1.8/1.1
+125,190,2.1/1.8/1.2
+130,160,1.9/1.6/1.0
+130,165,1.9/1.6/1.0
+130,170,2.0/1.7/1.1
+130,175,2.0/1.7/1.1
+130,180,2.1/1.8/1.1
+130,185,2.1/1.8/1.1
+130,190,2.1/1.8/1.1
+      `,
+      bulk: `
+50,160,4.0/3.0/1.7
+50,165,4.1/3.1/1.8
+50,170,4.3/3.2/1.8
+50,175,4.4/3.4/1.9
+50,180,4.5/3.5/1.9
+50,185,4.7/3.6/2.0
+50,190,4.8/3.8/2.1
+55,160,3.8/2.9/1.6
+55,165,4.0/3.0/1.7
+55,170,4.1/3.1/1.7
+55,175,4.2/3.2/1.8
+55,180,4.3/3.4/1.9
+55,185,4.4/3.5/1.9
+55,190,4.6/3.6/2.0
+60,160,3.7/2.8/1.6
+60,165,3.8/2.9/1.6
+60,170,3.9/3.0/1.7
+60,175,4.0/3.2/1.7
+60,180,4.1/3.3/1.8
+60,185,4.2/3.4/1.8
+60,190,4.4/3.5/1.9
+65,160,3.6/2.8/1.5
+65,165,3.7/2.9/1.6
+65,170,3.8/3.0/1.6
+65,175,3.9/3.1/1.7
+65,180,4.0/3.2/1.7
+65,185,4.1/3.3/1.7
+65,190,4.2/3.4/1.8
+70,160,3.5/2.7/1.5
+70,165,3.6/2.8/1.5
+70,170,3.7/2.9/1.6
+70,175,3.8/3.0/1.6
+70,180,3.8/3.1/1.6
+70,185,3.9/3.2/1.7
+70,190,4.0/3.3/1.7
+75,170,3.6/2.9/1.5
+75,175,3.6/2.9/1.6
+75,180,3.7/3.0/1.6
+75,185,3.8/3.1/1.6
+75,190,3.9/3.2/1.7
+80,175,3.5/2.9/1.5
+80,180,3.6/3.0/1.6
+80,185,3.7/3.1/1.6
+80,190,3.8/3.1/1.6
+85,180,3.5/2.9/1.5
+85,185,3.6/3.0/1.5
+85,190,3.7/3.1/1.6
+90,185,3.5/2.9/1.5
+90,190,3.6/3.0/1.5
+      `
+    },
+    female: {
+      cut: `
+45,150,2.4/1.8/1.3
+50,150,2.3/1.8/1.2
+50,155,2.4/1.9/1.3
+50,160,2.5/2.0/1.3
+55,150,2.2/1.8/1.2
+55,155,2.3/1.9/1.2
+55,160,2.4/1.9/1.3
+55,165,2.5/2.0/1.3
+60,150,2.1/1.7/1.2
+60,155,2.2/1.8/1.2
+60,160,2.3/1.9/1.2
+60,165,2.4/2.0/1.3
+60,170,2.5/2.1/1.3
+60,175,2.5/2.1/1.4
+65,150,2.1/1.7/1.1
+65,155,2.2/1.8/1.2
+65,160,2.2/1.9/1.2
+65,165,2.3/1.9/1.2
+65,170,2.4/2.0/1.3
+65,175,2.5/2.1/1.3
+65,180,2.5/2.2/1.4
+70,150,2.0/1.7/1.1
+70,155,2.1/1.8/1.1
+70,160,2.2/1.8/1.2
+70,165,2.2/1.9/1.2
+70,170,2.3/2.0/1.2
+70,175,2.4/2.0/1.3
+70,180,2.4/2.1/1.3
+75,150,2.0/1.7/1.1
+75,155,2.1/1.8/1.1
+75,160,2.1/1.8/1.1
+75,165,2.2/1.9/1.2
+75,170,2.3/1.9/1.2
+75,175,2.3/2.0/1.2
+75,180,2.4/2.1/1.3
+80,150,2.0/1.7/1.1
+80,155,2.0/1.7/1.1
+80,160,2.1/1.8/1.1
+80,165,2.2/1.9/1.2
+80,170,2.2/1.9/1.2
+80,175,2.3/2.0/1.2
+80,180,2.3/2.0/1.3
+85,150,1.9/1.7/1.0
+85,155,2.0/1.7/1.1
+85,160,2.1/1.8/1.1
+85,165,2.1/1.8/1.1
+85,170,2.2/1.9/1.2
+85,175,2.2/1.9/1.2
+85,180,2.3/2.0/1.2
+90,150,1.9/1.7/1.0
+90,155,2.0/1.7/1.1
+90,160,2/1.8/1.1
+90,165,2.1/1.8/1.1
+90,170,2.2/1.9/1.2
+90,175,2.2/2.0/1.2
+90,180,2.2/2.0/1.2
+95,150,1.9/1.6/1.0
+95,155,1.9/1.7/1.0
+95,160,2/1.7/1.1
+95,165,2.0/1.8/1.1
+95,170,2.1/1.8/1.1
+95,175,2.1/1.9/1.2
+95,180,2.2/1.9/1.2
+100,150,1.9/1.6/1.0
+100,155,1.9/1.7/1.0
+100,160,2/1.7/1.1
+100,165,2.0/1.8/1.1
+100,170,2.0/1.8/1.1
+100,175,2.1/1.9/1.1
+100,180,2.2/1.9/1.2
+105,150,1.9/1.6/1.0
+105,155,1.9/1.7/1.0
+105,160,1.9/1.7/1.0
+105,165,2.0/1.8/1.1
+105,170,2.0/1.8/1.1
+105,175,2.1/1.9/1.1
+105,180,2.1/1.9/1.1
+110,150,1.8/1.6/1.0
+110,155,1.9/1.7/1.0
+110,160,1.9/1.7/1.0
+110,165,2.0/1.8/1.1
+110,170,2.0/1.8/1.1
+110,175,2.1/1.8/1.1
+110,180,2.1/1.9/1.1
+115,150,1.8/1.6/1.0
+115,155,1.9/1.7/1.0
+115,160,1.9/1.7/1.0
+115,165,1.9/1.7/1.0
+115,170,2.0/1.8/1.1
+115,175,1.9/1.7/1.0
+115,180,2.1/1.9/1.1
+120,150,1.8/1.6/1.0
+120,155,1.9/1.7/1.0
+120,160,1.9/1.7/1.0
+120,165,1.9/1.7/1.0
+120,170,2.0/1.8/1.1
+120,175,2.0/1.8/1.1
+120,180,2.0/1.8/1.1
+      `,
+      bulk: `
+40,150,3.3/2.5/1.4
+40,155,3.5/2.7/1.5
+40,160,3.7/2.9/1.6
+40,165,3.8/3.0/1.6
+40,170,4.0/3.2/1.7
+40,175,4.1/3.4/1.8
+40,180,4.3/3.5/1.8
+45,150,3.2/2.5/1.4
+45,155,3.3/2.6/1.4
+45,160,3.5/2.8/1.5
+45,165,3.6/2.9/1.6
+45,170,3.8/3.1/1.6
+45,175,3.9/3.2/1.7
+45,180,4.1/3.4/1.7
+50,150,3.1/2.4/1.3
+50,155,3.2/2.6/1.4
+50,160,3.3/2.7/1.4
+50,165,3.5/2.8/1.5
+50,170,3.6/3.0/1.5
+50,175,3.7/3.1/1.6
+50,180,3.9/3.2/1.7
+55,150,3.0/2.4/1.3
+55,155,3.1/2.5/1.3
+55,160,3.2/2.7/1.4
+55,165,3.3/2.8/1.4
+55,170,3.5/2.9/1.5
+55,175,3.6/3.0/1.5
+55,180,3.7/3.1/1.6
+60,160,3.1/2.6/1.3
+60,165,3.2/2.7/1.4
+60,170,3.4/2.8/1.4
+60,175,3.5/2.9/1.5
+60,180,3.6/3.0/1.5
+65,165,3.2/2.7/1.4
+65,170,3.3/2.8/1.4
+65,175,3.4/2.9/1.4
+65,180,3.5/3.0/1.5
+70,170,3.2/2.7/1.4
+70,175,3.3/2.8/1.4
+70,180,3.4/2.9/1.4
+75,175,3.2/2.8/1.4
+75,180,3.3/2.9/1.4
+      `
+    }
+  };
+
+  function buildQuotaMap(raw) {
+    const map = new Map();
+    String(raw || "")
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith("#"))
+      .forEach(line => {
+        const [wStr, hStr, valRaw] = line.split(",").map(s => (s || "").trim());
+        if (!wStr || !hStr || !valRaw) return;
+        const value = valRaw.replace("4.8/38/2.1", "4.8/3.8/2.1").trim();
+        if (value.includes("#VALUE")) return;
+        const parts = value.split("/").map(x => parseFloat(x));
+        if (parts.length !== 3 || parts.some(x => !Number.isFinite(x))) return;
+        const key = `${parseInt(wStr, 10)}|${parseInt(hStr, 10)}`;
+        map.set(key, { carbsTrainingPerKg: parts[0], carbsRestPerKg: parts[1], proteinPerKg: parts[2] });
+      });
+    return map;
+  }
+
+  const QUOTA_MAP = {
+    male: { bulk: buildQuotaMap(QUOTA_RAW.male.bulk), cut: buildQuotaMap(QUOTA_RAW.male.cut) },
+    female: { bulk: buildQuotaMap(QUOTA_RAW.female.bulk), cut: buildQuotaMap(QUOTA_RAW.female.cut) }
+  };
+
+  function getQuotaExact(gender, phase, weightKg, heightCm) {
+    const map = QUOTA_MAP[gender]?.[phase];
+    if (!map) return null;
+    return map.get(`${weightKg}|${heightCm}`) || null;
+  }
+
+  function nearestAvailableQuota(gender, phase, heightCm, weightKg) {
+    const dims = QUOTA_DIMENSIONS[gender]?.[phase];
+    if (!dims) return null;
+    const map = QUOTA_MAP[gender]?.[phase];
+    if (!map) return null;
+
+    const minH = dims.heights[0];
+    const maxH = dims.heights[dims.heights.length - 1];
+    const minW = dims.weights[0];
+    const maxW = dims.weights[dims.weights.length - 1];
+    const h0 = clamp(Math.round(heightCm / 5) * 5, minH, maxH);
+    const w0 = clamp(Math.round(weightKg / 5) * 5, minW, maxW);
+
+    // 若该格为空，按“曼哈顿距离”向外扩散找最近可用格子
+    let best = null;
+    let bestDist = Infinity;
+    dims.weights.forEach(w => {
+      dims.heights.forEach(h => {
+        const key = `${w}|${h}`;
+        const v = map.get(key);
+        if (!v) return;
+        const dist = Math.abs(w - w0) + Math.abs(h - h0);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = { heightCm: h, weightKg: w, ...v };
+        }
+      });
+    });
+    return best;
+  }
+
+  // 三个值分别是：训练日碳水 / 休息日碳水 / 每日蛋白（单位 g/kg）
+  function suggestMacrosFromQuotaTable({ gender, phase, heightCm, weightKg }) {
+    return nearestAvailableQuota(gender, phase, heightCm, weightKg);
+  }
+  const BUILT_IN_FOODS = [
+    // 只保留你指定的 4 种系统内置食物（每 100g）
+    { id: "egg", name: "鸡蛋", proteinPer100g: 13, carbsPer100g: 1.3, fatPer100g: 11, systemBuiltIn: true },
+    { id: "chicken_leg", name: "鸡腿", proteinPer100g: 18, carbsPer100g: 0, fatPer100g: 8, systemBuiltIn: true },
+    { id: "duck_leg", name: "鸭腿", proteinPer100g: 17, carbsPer100g: 0, fatPer100g: 12, systemBuiltIn: true },
+    { id: "rice_cooked", name: "米饭（熟）", proteinPer100g: 2.6, carbsPer100g: 28, fatPer100g: 0.3, systemBuiltIn: true }
+  ];
+
+  function todayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function loadJSON(key, defaultValue) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return defaultValue;
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn("加载 localStorage 失败:", key, e);
+      return defaultValue;
+    }
+  }
+
+  function saveJSON(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn("保存 localStorage 失败:", key, e);
+    }
+  }
+
+  function getCarbsPerKgForDay(settings) {
+    return settings.dayType === "rest" ? settings.carbsRestPerKg : settings.carbsTrainingPerKg;
+  }
+
+  function calcDailyTargets(settings) {
+    const { weightKg, proteinPerKg, fatGrams } = settings;
+    const carbsPerKg = getCarbsPerKgForDay(settings);
+    return {
+      proteinTarget: weightKg * proteinPerKg,
+      carbsTarget: weightKg * carbsPerKg,
+      fatTarget: fatGrams
+    };
+  }
+
+  function calcEntryMacros(food, grams) {
+    const factor = grams / 100;
+    return {
+      protein: food.proteinPer100g * factor,
+      carbs: food.carbsPer100g * factor,
+      fat: food.fatPer100g * factor
+    };
+  }
+
+  function calcPercentage(current, target) {
+    if (!target || target <= 0) return 0;
+    return Math.min(200, Math.round((current / target) * 100));
+  }
+
+  let state = {
+    settings: null,
+    foods: [],
+    logs: {},
+    currentDate: todayStr(),
+    editingFoodId: null,
+    rankTab: "kcal" // kcal | strength
+  };
+
+  const DEFAULT_RANK_PROFILE = {
+    bench: { direct1rm: null, weight: null, reps: null, sets: null },
+    deadlift: { direct1rm: null, weight: null, reps: null, sets: null },
+    squat: { direct1rm: null, weight: null, reps: null, sets: null }
+  };
+
+  function normalizeRankProfile(p) {
+    const base = JSON.parse(JSON.stringify(DEFAULT_RANK_PROFILE));
+    if (!p || typeof p !== "object") return base;
+    function n(x) {
+      const v = Number(x);
+      return Number.isFinite(v) ? v : null;
+    }
+    ["bench", "deadlift", "squat"].forEach(k => {
+      const src = p[k] || {};
+      base[k].direct1rm = n(src.direct1rm);
+      base[k].weight = n(src.weight);
+      base[k].reps = n(src.reps);
+      base[k].sets = n(src.sets);
+    });
+    return base;
+  }
+
+  function loadRankProfile() {
+    return normalizeRankProfile(loadJSON(STORAGE_KEYS.RANK_PROFILE, DEFAULT_RANK_PROFILE));
+  }
+
+  function saveRankProfile(p) {
+    saveJSON(STORAGE_KEYS.RANK_PROFILE, normalizeRankProfile(p));
+  }
+
+  function calcKcalFromMacros({ protein, carbs, fat }) {
+    const p = Number(protein) || 0;
+    const c = Number(carbs) || 0;
+    const f = Number(fat) || 0;
+    return p * 4 + c * 4 + f * 9;
+  }
+
+  // Epley 公式：1RM = w * (1 + reps/30)
+  function estimate1RM(weightKg, reps) {
+    const w = Number(weightKg);
+    const r = Number(reps);
+    if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0) return null;
+    return w * (1 + r / 30);
+  }
+
+  function pickLift1RM(lift) {
+    const direct = Number(lift?.direct1rm);
+    if (Number.isFinite(direct) && direct > 0) return direct;
+    const est = estimate1RM(lift?.weight, lift?.reps);
+    return est && est > 0 ? est : null;
+  }
+
+  function ratioText(value, bw) {
+    const v = Number(value);
+    const b = Number(bw);
+    if (!Number.isFinite(v) || v <= 0 || !Number.isFinite(b) || b <= 0) return "";
+    return (v / b).toFixed(2) + "×";
+  }
+
+  function openRankInputModal() {
+    const backdrop = document.getElementById("rankInputModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeRankInputModal() {
+    const backdrop = document.getElementById("rankInputModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  function openRankModal() {
+    const backdrop = document.getElementById("rankModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeRankModal() {
+    const backdrop = document.getElementById("rankModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  function setRankTab(tab) {
+    state.rankTab = tab === "strength" ? "strength" : "kcal";
+    document.getElementById("rankTabKcalBtn")?.classList.toggle("active", state.rankTab === "kcal");
+    document.getElementById("rankTabStrengthBtn")?.classList.toggle("active", state.rankTab === "strength");
+
+    const sortSel = document.getElementById("rankSortSelect");
+    if (sortSel) {
+      if (state.rankTab === "kcal") {
+        sortSel.value = sortSel.value.startsWith("kcal") ? sortSel.value : "kcal_desc";
+      } else {
+        if (sortSel.value.startsWith("kcal")) sortSel.value = "total_desc";
+      }
+    }
+  }
+
+  function fillRankMineForm(profile) {
+    const p = normalizeRankProfile(profile);
+    function setVal(id, v) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = v ?? "";
+    }
+
+    setVal("rankBenchDirect1rmInput", p.bench.direct1rm);
+    setVal("rankBenchWeightInput", p.bench.weight);
+    setVal("rankBenchRepsInput", p.bench.reps);
+    setVal("rankBenchSetsInput", p.bench.sets);
+
+    setVal("rankDeadliftDirect1rmInput", p.deadlift.direct1rm);
+    setVal("rankDeadliftWeightInput", p.deadlift.weight);
+    setVal("rankDeadliftRepsInput", p.deadlift.reps);
+    setVal("rankDeadliftSetsInput", p.deadlift.sets);
+
+    setVal("rankSquatDirect1rmInput", p.squat.direct1rm);
+    setVal("rankSquatWeightInput", p.squat.weight);
+    setVal("rankSquatRepsInput", p.squat.reps);
+    setVal("rankSquatSetsInput", p.squat.sets);
+  }
+
+  function readRankMineForm() {
+    function num(id) {
+      const v = parseFloat(document.getElementById(id)?.value);
+      return Number.isFinite(v) ? v : null;
+    }
+    return normalizeRankProfile({
+      bench: { direct1rm: num("rankBenchDirect1rmInput"), weight: num("rankBenchWeightInput"), reps: num("rankBenchRepsInput"), sets: num("rankBenchSetsInput") },
+      deadlift: { direct1rm: num("rankDeadliftDirect1rmInput"), weight: num("rankDeadliftWeightInput"), reps: num("rankDeadliftRepsInput"), sets: num("rankDeadliftSetsInput") },
+      squat: { direct1rm: num("rankSquatDirect1rmInput"), weight: num("rankSquatWeightInput"), reps: num("rankSquatRepsInput"), sets: num("rankSquatSetsInput") }
+    });
+  }
+
+  function buildMyLeaderboardPayload(dateStr, profile) {
+    const p = normalizeRankProfile(profile);
+    const bw = state.settings?.weightKg || null;
+    const dayLog = getOrCreateDayLog(dateStr);
+    const totals = calcDayTotals(dayLog);
+    const kcal = Math.round(calcKcalFromMacros(totals));
+
+    const bench1rm = pickLift1RM(p.bench);
+    const deadlift1rm = pickLift1RM(p.deadlift);
+    const squat1rm = pickLift1RM(p.squat);
+    const total1rm = (bench1rm || 0) + (deadlift1rm || 0) + (squat1rm || 0);
+
+    return {
+      date: dateStr,
+      bodyweight_kg: bw,
+      kcal,
+      protein_g: Math.round((totals.protein || 0) * 10) / 10,
+      carbs_g: Math.round((totals.carbs || 0) * 10) / 10,
+      fat_g: Math.round((totals.fat || 0) * 10) / 10,
+      bench_1rm: bench1rm,
+      deadlift_1rm: deadlift1rm,
+      squat_1rm: squat1rm,
+      total_1rm: total1rm || null
+    };
+  }
+
+  async function uploadMyLeaderboard(dateStr) {
+    if (!sb) throw new Error("当前无法连接在线服务（Supabase）");
+    const { data: sessData } = await sb.auth.getSession();
+    const session = sessData.session;
+    if (!session) throw new Error("请先登录");
+    const user = session.user;
+
+    const profile = readRankMineForm();
+    saveRankProfile(profile);
+
+    const payload = buildMyLeaderboardPayload(dateStr, profile);
+    if (!payload.bodyweight_kg || payload.bodyweight_kg <= 0) throw new Error("请先在主页面填写体重（kg），并点击“保存配置”。");
+
+    const row = {
+      date: payload.date,
+      user_id: user.id,
+      nickname: getDisplayNameFromUser(user),
+      bodyweight_kg: payload.bodyweight_kg,
+      kcal: payload.kcal,
+      protein_g: payload.protein_g,
+      carbs_g: payload.carbs_g,
+      fat_g: payload.fat_g,
+      bench_1rm: payload.bench_1rm,
+      deadlift_1rm: payload.deadlift_1rm,
+      squat_1rm: payload.squat_1rm,
+      total_1rm: payload.total_1rm
+    };
+
+    const { error } = await sb.from(SUPABASE_RANK_TABLE).upsert(row, { onConflict: "date,user_id" });
+    if (error) throw error;
+  }
+
+  function sortRows(rows, sortKey) {
+    const key = String(sortKey || "kcal_desc");
+    const arr = Array.isArray(rows) ? [...rows] : [];
+    function num(v) {
+      const x = Number(v);
+      return Number.isFinite(x) ? x : null;
+    }
+    function cmpDesc(a, b) {
+      if (a == null && b == null) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      return b - a;
+    }
+    function cmpAsc(a, b) {
+      if (a == null && b == null) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      return a - b;
+    }
+
+    const get = (r) => {
+      if (key.startsWith("kcal")) return num(r.kcal);
+      if (key.startsWith("bw")) return num(r.bodyweight_kg);
+      if (key.startsWith("bench")) return num(r.bench_1rm);
+      if (key.startsWith("deadlift")) return num(r.deadlift_1rm);
+      if (key.startsWith("squat")) return num(r.squat_1rm);
+      if (key.startsWith("total")) {
+        const bw = num(r.bodyweight_kg);
+        const t = num(r.total_1rm);
+        if (!bw || !t) return null;
+        return t / bw;
+      }
+      return null;
+    };
+
+    const desc = key.endsWith("_desc");
+    arr.sort((ra, rb) => (desc ? cmpDesc(get(ra), get(rb)) : cmpAsc(get(ra), get(rb))));
+    return arr;
+  }
+
+  function renderRankTable(rows) {
+    const table = document.getElementById("rankTable");
+    if (!table) return;
+    const data = Array.isArray(rows) ? rows : [];
+    const sorted = sortRows(data, document.getElementById("rankSortSelect")?.value);
+
+    const thKcal = `
+      <tr>
+        <th>#</th>
+        <th>昵称</th>
+        <th>kcal</th>
+        <th>P/C/F (g)</th>
+        <th>更新时间</th>
+      </tr>
+    `;
+
+    const thStrength = `
+      <tr>
+        <th>#</th>
+        <th>昵称</th>
+        <th>体重</th>
+        <th>卧推 1RM</th>
+        <th>硬拉 1RM</th>
+        <th>深蹲 1RM</th>
+        <th>三项总和/体重</th>
+        <th>更新时间</th>
+      </tr>
+    `;
+
+    function td(text) {
+      return `<td>${text == null ? "-" : text}</td>`;
+    }
+
+    const body = sorted.map((r, idx) => {
+      const name = r.nickname || (r.user_id ? String(r.user_id).slice(0, 8) : "未知");
+      const updated = r.updated_at ? formatTS(r.updated_at) : "-";
+      if (state.rankTab === "kcal") {
+        const pcf = `${Number(r.protein_g || 0).toFixed(1)}/${Number(r.carbs_g || 0).toFixed(1)}/${Number(r.fat_g || 0).toFixed(1)}`;
+        return `
+          <tr>
+            ${td(idx + 1)}
+            ${td(name)}
+            ${td(Number(r.kcal || 0).toFixed(0))}
+            ${td(pcf)}
+            ${td(updated)}
+          </tr>
+        `;
+      }
+      const bw = Number(r.bodyweight_kg);
+      const bench = Number(r.bench_1rm);
+      const dead = Number(r.deadlift_1rm);
+      const squat = Number(r.squat_1rm);
+      const total = Number(r.total_1rm);
+      const totalRatio = (Number.isFinite(total) && Number.isFinite(bw) && bw > 0) ? (total / bw).toFixed(2) + "×" : "-";
+
+      const benchTxt = Number.isFinite(bench) && bench > 0 ? `${bench.toFixed(1)} <span style="color:#888;font-size:11px;">(${ratioText(bench,bw)})</span>` : "-";
+      const deadTxt = Number.isFinite(dead) && dead > 0 ? `${dead.toFixed(1)} <span style="color:#888;font-size:11px;">(${ratioText(dead,bw)})</span>` : "-";
+      const squatTxt = Number.isFinite(squat) && squat > 0 ? `${squat.toFixed(1)} <span style="color:#888;font-size:11px;">(${ratioText(squat,bw)})</span>` : "-";
+
+      return `
+        <tr>
+          ${td(idx + 1)}
+          ${td(name)}
+          ${td(Number.isFinite(bw) ? bw.toFixed(1) : "-")}
+          <td>${benchTxt}</td>
+          <td>${deadTxt}</td>
+          <td>${squatTxt}</td>
+          ${td(totalRatio)}
+          ${td(updated)}
+        </tr>
+      `;
+    }).join("");
+
+    table.innerHTML = `
+      <thead>${state.rankTab === "kcal" ? thKcal : thStrength}</thead>
+      <tbody>${body || `<tr><td colspan="${state.rankTab === "kcal" ? 5 : 8}" style="color:#888;padding:12px;">暂无数据</td></tr>`}</tbody>
+    `;
+  }
+
+  async function fetchAndRenderRank(dateStr) {
+    const status = document.getElementById("rankStatus");
+    const sortSel = document.getElementById("rankSortSelect");
+    if (status) status.textContent = "加载中...";
+    try {
+      if (!sb) throw new Error("当前无法连接在线服务（Supabase）");
+      if (!sortSel) throw new Error("页面组件缺失");
+      const { data, error } = await sb
+        .from(SUPABASE_RANK_TABLE)
+        .select("date,user_id,nickname,bodyweight_kg,kcal,protein_g,carbs_g,fat_g,bench_1rm,deadlift_1rm,squat_1rm,total_1rm,updated_at")
+        .eq("date", dateStr);
+      if (error) throw error;
+      renderRankTable(data || []);
+      if (status) status.textContent = `日期：${dateStr} · 共 ${Array.isArray(data) ? data.length : 0} 人`;
+    } catch (e) {
+      if (status) status.textContent = `加载失败：${e.message || e}`;
+      renderRankTable([]);
+    }
+  }
+
+  function initSettings() {
+    const stored = loadJSON(STORAGE_KEYS.SETTINGS, null);
+    state.settings = normalizeSettings(stored || { ...DEFAULT_SETTINGS });
+    if (!stored) {
+      saveJSON(STORAGE_KEYS.SETTINGS, state.settings);
+    }
+  }
+
+  function normalizeSettings(s) {
+    const base = { ...DEFAULT_SETTINGS, ...(s && typeof s === "object" ? s : {}) };
+    base.gender = base.gender === "female" ? "female" : "male";
+    base.phase = base.phase === "cut" ? "cut" : "bulk";
+    base.dayType = base.dayType === "rest" ? "rest" : "training";
+    base.heightCm = Number(base.heightCm) || DEFAULT_SETTINGS.heightCm;
+    base.weightKg = Number(base.weightKg) || DEFAULT_SETTINGS.weightKg;
+    base.proteinPerKg = Number(base.proteinPerKg) || DEFAULT_SETTINGS.proteinPerKg;
+    base.carbsTrainingPerKg = Number(base.carbsTrainingPerKg) || DEFAULT_SETTINGS.carbsTrainingPerKg;
+    base.carbsRestPerKg = Number(base.carbsRestPerKg) || DEFAULT_SETTINGS.carbsRestPerKg;
+    base.fatGrams = Number(base.fatGrams);
+    if (!Number.isFinite(base.fatGrams)) base.fatGrams = defaultFatGrams(base.gender, base.phase);
+    return base;
+  }
+
+  function initFoods() {
+    const stored = loadJSON(STORAGE_KEYS.FOODS, null);
+    if (!stored || !Array.isArray(stored) || stored.length === 0) {
+      state.foods = [...BUILT_IN_FOODS];
+      saveJSON(STORAGE_KEYS.FOODS, state.foods);
+    } else {
+      state.foods = normalizeFoods(stored);
+      saveJSON(STORAGE_KEYS.FOODS, state.foods);
+    }
+  }
+
+  function normalizeFoods(foods) {
+    const safe = Array.isArray(foods) ? foods : [];
+    const userFoods = safe.filter(f => f && f.id && !f.systemBuiltIn);
+    const builtInById = Object.fromEntries(BUILT_IN_FOODS.map(f => [f.id, f]));
+    const builtInIds = new Set(BUILT_IN_FOODS.map(f => f.id));
+
+    // 1) 清理旧的系统内置食物（只保留当前 BUILT_IN_FOODS）
+    // 2) 用当前 BUILT_IN_FOODS 覆盖系统食物的名称和宏量（保证名称一致）
+    const normalizedBuiltIns = BUILT_IN_FOODS.map(bf => ({ ...bf, systemBuiltIn: true }));
+
+    // 防止用户自定义食物 ID 与内置冲突：若冲突，保留用户食物但改 ID
+    const normalizedUserFoods = userFoods.map(f => {
+      if (builtInIds.has(f.id)) {
+        return { ...f, id: `user_${Date.now()}_${Math.random().toString(16).slice(2)}` };
+      }
+      return f;
+    });
+
+    return [...normalizedBuiltIns, ...normalizedUserFoods];
+  }
+
+  // 已移除：本地 JSON 导出/导入（由云端同步替代）
+
+  function getLocalBundle() {
+    return {
+      settings: loadJSON(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS),
+      foods: loadJSON(STORAGE_KEYS.FOODS, []),
+      logs: loadJSON(STORAGE_KEYS.LOGS, {})
+    };
+  }
+
+  function setLocalBundle(bundle) {
+    saveJSON(STORAGE_KEYS.SETTINGS, normalizeSettings(bundle.settings || DEFAULT_SETTINGS));
+    saveJSON(STORAGE_KEYS.FOODS, normalizeFoods(bundle.foods || []));
+    saveJSON(STORAGE_KEYS.LOGS, bundle.logs || {});
+    initSettings();
+    initFoods();
+    initLogs();
+    renderSettings();
+    renderFoodsList();
+    renderMeals();
+    renderDaySummary();
+    setFoodFormMode();
+  }
+
+  function mergeBundlesPreferLocal(localB, cloudB) {
+    const local = localB || { settings: DEFAULT_SETTINGS, foods: [], logs: {} };
+    const cloud = cloudB || { settings: DEFAULT_SETTINGS, foods: [], logs: {} };
+
+    // settings：以本地为主
+    const settings = normalizeSettings(local.settings || DEFAULT_SETTINGS);
+
+    // foods：按 id 合并（冲突优先本地）
+    const byId = new Map();
+    (cloud.foods || []).forEach(f => { if (f && f.id) byId.set(f.id, f); });
+    (local.foods || []).forEach(f => { if (f && f.id) byId.set(f.id, f); });
+    const foods = normalizeFoods(Array.from(byId.values()));
+
+    // logs：按日期合并；餐与条目按 id 合并（冲突优先本地）
+    const logs = { ...(cloud.logs || {}) };
+    const localLogs = local.logs || {};
+    Object.keys(localLogs).forEach(date => {
+      if (!logs[date]) {
+        logs[date] = localLogs[date];
+        return;
+      }
+      const cloudDay = logs[date];
+      const localDay = localLogs[date];
+      const mealById = new Map();
+      (cloudDay.meals || []).forEach(m => { if (m && m.id) mealById.set(m.id, m); });
+      (localDay.meals || []).forEach(m => {
+        if (!m || !m.id) return;
+        const existing = mealById.get(m.id);
+        if (!existing) {
+          mealById.set(m.id, m);
+          return;
+        }
+        const entryById = new Map();
+        (existing.entries || []).forEach(e => { if (e && e.id) entryById.set(e.id, e); });
+        (m.entries || []).forEach(e => { if (e && e.id) entryById.set(e.id, e); });
+        mealById.set(m.id, { ...existing, ...m, entries: Array.from(entryById.values()) });
+      });
+      logs[date] = { ...cloudDay, ...localDay, meals: Array.from(mealById.values()) };
+    });
+
+    return { settings, foods, logs };
+  }
+
+  function hasAnyData(bundle) {
+    const b = bundle || {};
+    const foods = Array.isArray(b.foods) ? b.foods.length : 0;
+    const logs = b.logs && typeof b.logs === "object" ? Object.keys(b.logs).length : 0;
+    return foods > 0 || logs > 0;
+  }
+
+  function formatTS(ts) {
+    if (!ts) return "未知时间";
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return String(ts);
+    return d.toLocaleString();
+  }
+
+  function openSyncModal(summaryText) {
+    const summary = document.getElementById("syncSummary");
+    if (summary) summary.textContent = summaryText || "";
+    const backdrop = document.getElementById("syncModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeSyncModal() {
+    const backdrop = document.getElementById("syncModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  async function fetchCloudBundle() {
+    const user = (await sb.auth.getUser()).data.user;
+    if (!user) return null;
+    const { data, error } = await sb
+      .from(SUPABASE_USER_DATA_TABLE)
+      .select("data, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return { ...(data.data || {}), _updatedAt: data.updated_at };
+  }
+
+  async function pushCloudBundle(bundle) {
+    const user = (await sb.auth.getUser()).data.user;
+    if (!user) throw new Error("未登录");
+    const payload = {
+      user_id: user.id,
+      data: {
+        settings: bundle.settings,
+        foods: bundle.foods,
+        logs: bundle.logs
+      }
+    };
+    const { error } = await sb.from(SUPABASE_USER_DATA_TABLE).upsert(payload, { onConflict: "user_id" });
+    if (error) throw error;
+  }
+
+  async function startSyncFlow() {
+    try {
+      const localB = getLocalBundle();
+      const cloudB = await fetchCloudBundle();
+      cloudCache = cloudB;
+      const localInfo = hasAnyData(localB) ? "本地：有数据" : "本地：无数据";
+      const cloudInfo = cloudB && hasAnyData(cloudB) ? `云端：有数据（更新时间：${formatTS(cloudB._updatedAt)}）` : "云端：无数据";
+      openSyncModal(`${localInfo}；${cloudInfo}。请选择同步方式。`);
+
+      document.getElementById("syncUseCloudBtn").onclick = async () => {
+        if (!cloudB || !hasAnyData(cloudB)) {
+          alert("云端没有可用数据。");
+          return;
+        }
+        setLocalBundle(cloudB);
+        closeSyncModal();
+        alert("已使用云端覆盖本地。");
+      };
+
+      document.getElementById("syncUseLocalBtn").onclick = async () => {
+        await pushCloudBundle(getLocalBundle());
+        closeSyncModal();
+        alert("已使用本地覆盖云端。");
+      };
+
+      document.getElementById("syncMergeBtn").onclick = async () => {
+        const merged = mergeBundlesPreferLocal(localB, cloudB || { settings: DEFAULT_SETTINGS, foods: [], logs: {} });
+        setLocalBundle(merged);
+        await pushCloudBundle(merged);
+        closeSyncModal();
+        alert("已合并并同步到云端。");
+      };
+    } catch (e) {
+      alert(`同步失败：${e.message || e}`);
+    }
+  }
+
+  function openAuthModal() {
+    const backdrop = document.getElementById("authModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeAuthModal() {
+    const backdrop = document.getElementById("authModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  function openProfileModal() {
+    const backdrop = document.getElementById("profileModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+  }
+
+  function closeProfileModal() {
+    const backdrop = document.getElementById("profileModalBackdrop");
+    if (!backdrop) return;
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  function getDisplayNameFromUser(user) {
+    const nick = user?.user_metadata?.nickname;
+    if (nick && String(nick).trim()) return String(nick).trim();
+    const email = user?.email;
+    if (email) return email.split("@")[0];
+    return "已登录";
+  }
+
+  async function refreshTopAuthButton(sessionFromEvent) {
+    const btn = document.getElementById("topAuthBtn");
+    if (!btn || !sb) return;
+    // 优先使用 onAuthStateChange 传入的 session，失败时再主动获取
+    let session = sessionFromEvent || currentSession;
+    if (!session) {
+      try {
+        const { data } = await sb.auth.getSession();
+        session = data.session;
+      } catch (e) {
+        console.warn("获取会话失败:", e);
+      }
+    }
+    currentSession = session || null;
+    if (!session) {
+      btn.textContent = "登录";
+      btn.classList.remove("btn-primary");
+      btn.classList.add("btn-outline");
+      return;
+    }
+    btn.textContent = getDisplayNameFromUser(session.user);
+    btn.classList.remove("btn-outline");
+    btn.classList.add("btn-primary");
+  }
+
+  async function refreshProfileModalContent() {
+    const info = document.getElementById("profileInfo");
+    const nickInput = document.getElementById("nicknameInput");
+    if (!info || !nickInput || !sb) return;
+    let session = currentSession;
+    if (!session) {
+      const { data } = await sb.auth.getSession();
+      session = data.session;
+      currentSession = session || null;
+    }
+    if (!session) {
+      info.textContent = "未登录。";
+      nickInput.value = "";
+      return;
+    }
+    info.textContent = `当前账号：${session.user.email || session.user.id}`;
+    nickInput.value = session.user.user_metadata?.nickname || "";
+  }
+
+  function setupOnlineUI() {
+    const topBtn = document.getElementById("topAuthBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const syncBtn = document.getElementById("syncNowBtn");
+    const saveNickBtn = document.getElementById("saveNicknameBtn");
+
+    if (topBtn) {
+      topBtn.addEventListener("click", async () => {
+        try {
+          // 优先使用缓存的 session，避免每次点击都要打一次网络请求
+          let session = currentSession;
+          if (!session) {
+            try {
+              const { data } = await sb.auth.getSession();
+              session = data.session;
+              currentSession = session || null;
+            } catch (e) {
+              console.warn("点击登录时获取会话失败:", e);
+            }
+          }
+          if (!session) {
+            openAuthModal();
+            return;
+          }
+          await refreshProfileModalContent();
+          openProfileModal();
+        } catch (e) {
+          console.error("点击用户名按钮时发生错误:", e);
+          alert("打开账号信息时出错，请刷新页面后重试。");
+        }
+      });
+    }
+
+    // 登录弹窗
+    document.getElementById("closeAuthModalBtn")?.addEventListener("click", closeAuthModal);
+    document.getElementById("authModalBackdrop")?.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "authModalBackdrop") closeAuthModal();
+    });
+
+    // 账号弹窗
+    document.getElementById("closeProfileModalBtn")?.addEventListener("click", closeProfileModal);
+    document.getElementById("profileModalBackdrop")?.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "profileModalBackdrop") closeProfileModal();
+    });
+
+    loginBtn?.addEventListener("click", async () => {
+      const email = document.getElementById("loginEmailInput").value.trim();
+      const password = document.getElementById("loginPasswordInput").value;
+      if (!email) return alert("请输入邮箱");
+      if (!password) return alert("请输入密码");
+      try {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        closeAuthModal();
+        // onAuthStateChange 会触发同步弹窗（C）
+      } catch (e) {
+        alert(`登录失败：${e.message || e}`);
+      }
+    });
+
+    logoutBtn?.addEventListener("click", async () => {
+      try {
+        await sb.auth.signOut();
+        cloudCache = null;
+        closeProfileModal();
+        await refreshTopAuthButton();
+        alert("已退出登录。");
+      } catch (e) {
+        console.error("退出登录失败:", e);
+        alert(`退出登录失败：${e.message || e}`);
+      }
+    });
+
+    syncBtn?.addEventListener("click", async () => {
+      try {
+        await startSyncFlow();
+      } catch (e) {
+        console.error("同步流程出错:", e);
+        alert(`同步失败：${e.message || e}`);
+      }
+    });
+
+    saveNickBtn?.addEventListener("click", async () => {
+      const nick = document.getElementById("nicknameInput").value.trim();
+      try {
+        const { error } = await sb.auth.updateUser({ data: { nickname: nick } });
+        if (error) throw error;
+        await refreshTopAuthButton();
+        alert("昵称已保存。");
+      } catch (e) {
+        alert(`保存失败：${e.message || e}`);
+      }
+    });
+
+    sb.auth.onAuthStateChange(async (event, session) => {
+      currentSession = session || null;
+      await refreshTopAuthButton(session || undefined);
+      if (event === "SIGNED_IN") {
+        await startSyncFlow();
+      }
+    });
+
+    refreshTopAuthButton();
+  }
+
+  // 已移除：本地 JSON 导出/导入（由云端同步替代）
+
+  function initLogs() {
+    const stored = loadJSON(STORAGE_KEYS.LOGS, {});
+    state.logs = stored;
+  }
+
+  function getOrCreateDayLog(dateStr) {
+    if (!state.logs[dateStr]) {
+      state.logs[dateStr] = {
+        date: dateStr,
+        meals: [
+          { id: "breakfast", name: "早餐", entries: [] },
+          { id: "lunch", name: "午餐", entries: [] },
+          { id: "dinner", name: "晚餐", entries: [] }
+        ]
+      };
+      saveJSON(STORAGE_KEYS.LOGS, state.logs);
+    }
+    return state.logs[dateStr];
+  }
+
+  function renderSettings() {
+    const { heightCm, weightKg, gender, phase, dayType, proteinPerKg, carbsTrainingPerKg, carbsRestPerKg, fatGrams } = state.settings;
+    document.getElementById("heightInput").value = heightCm;
+    document.getElementById("weightInput").value = weightKg;
+    document.getElementById("genderSelect").value = gender;
+    document.getElementById("phaseSelect").value = phase;
+    document.getElementById("proteinPerKgInput").value = proteinPerKg;
+    document.getElementById("carbsTrainingPerKgInput").value = carbsTrainingPerKg;
+    document.getElementById("carbsRestPerKgInput").value = carbsRestPerKg;
+    document.getElementById("fatGramsInput").value = fatGrams;
+
+    const tBtn = document.getElementById("dayTypeTrainingBtn");
+    const rBtn = document.getElementById("dayTypeRestBtn");
+    tBtn.classList.toggle("active", dayType === "training");
+    rBtn.classList.toggle("active", dayType === "rest");
+
+    const targets = calcDailyTargets(state.settings);
+    const box = document.getElementById("targetsSummary");
+    const carbsLabel = state.settings.dayType === "rest" ? "碳水（休息日）" : "碳水（训练日）";
+    box.innerHTML = `
+      <div class="target-chip">
+        蛋白质
+        <span class="value">${targets.proteinTarget.toFixed(0)} g</span>
+      </div>
+      <div class="target-chip">
+        ${carbsLabel}
+        <span class="value">${targets.carbsTarget.toFixed(0)} g</span>
+      </div>
+      <div class="target-chip">
+        脂肪
+        <span class="value">${targets.fatTarget.toFixed(0)} g</span>
+      </div>
+    `;
+  }
+
+  function setDayType(dayType) {
+    state.settings.dayType = dayType === "rest" ? "rest" : "training";
+    saveJSON(STORAGE_KEYS.SETTINGS, state.settings);
+    renderSettings();
+    renderDaySummary();
+  }
+
+  function applyQuotaSuggestionToSettings(suggestion, { alsoSetFatDefault } = { alsoSetFatDefault: true }) {
+    if (!suggestion) return;
+    state.settings.proteinPerKg = suggestion.proteinPerKg;
+    state.settings.carbsTrainingPerKg = suggestion.carbsTrainingPerKg;
+    state.settings.carbsRestPerKg = suggestion.carbsRestPerKg;
+    if (alsoSetFatDefault) {
+      state.settings.fatGrams = defaultFatGrams(state.settings.gender, state.settings.phase);
+    }
+    saveJSON(STORAGE_KEYS.SETTINGS, state.settings);
+    renderSettings();
+    renderDaySummary();
+  }
+
+  function autoFillFromQuotaForCurrentInputs() {
+    const heightCm = parseFloat(document.getElementById("heightInput").value);
+    const weightKg = parseFloat(document.getElementById("weightInput").value);
+    const gender = document.getElementById("genderSelect").value;
+    const phase = document.getElementById("phaseSelect").value;
+    if (!heightCm || heightCm <= 0 || !weightKg || weightKg <= 0) {
+      alert("请先输入合法的身高与体重。");
+      return;
+    }
+    state.settings.heightCm = heightCm;
+    state.settings.weightKg = weightKg;
+    state.settings.gender = gender;
+    state.settings.phase = phase;
+    const suggestion = suggestMacrosFromQuotaTable({ gender, phase, heightCm, weightKg });
+    applyQuotaSuggestionToSettings(suggestion, { alsoSetFatDefault: true });
+  }
+
+  function openQuotaModal() {
+    const backdrop = document.getElementById("quotaModalBackdrop");
+    backdrop.style.display = "flex";
+    backdrop.setAttribute("aria-hidden", "false");
+    quotaModalState.gender = state.settings.gender;
+    quotaModalState.phase = state.settings.phase;
+    renderQuotaModal();
+  }
+
+  function closeQuotaModal() {
+    const backdrop = document.getElementById("quotaModalBackdrop");
+    backdrop.style.display = "none";
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+
+  const quotaModalState = { gender: "male", phase: "bulk" };
+
+  function setQuotaModalSegment() {
+    document.getElementById("quotaGenderMaleBtn").classList.toggle("active", quotaModalState.gender === "male");
+    document.getElementById("quotaGenderFemaleBtn").classList.toggle("active", quotaModalState.gender === "female");
+    document.getElementById("quotaPhaseBulkBtn").classList.toggle("active", quotaModalState.phase === "bulk");
+    document.getElementById("quotaPhaseCutBtn").classList.toggle("active", quotaModalState.phase === "cut");
+  }
+
+  function renderQuotaModal() {
+    setQuotaModalSegment();
+    const dims = QUOTA_DIMENSIONS[quotaModalState.gender][quotaModalState.phase];
+    const grid = document.getElementById("quotaGrid");
+    const heights = dims.heights;
+    const weights = dims.weights;
+
+    const header = `
+      <div class="quota-grid">
+        <table>
+          <thead>
+            <tr>
+              <th>体重\\身高</th>
+              ${heights.map(h => `<th>${h}cm</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${weights.map(w => {
+              return `
+                <tr>
+                  <td>${w}kg</td>
+                  ${heights.map(h => {
+                    const v = getQuotaExact(quotaModalState.gender, quotaModalState.phase, w, h);
+                    if (!v) {
+                      return `<td style="color:#bbb;">-</td>`;
+                    }
+                    const val = `${v.carbsTrainingPerKg}/${v.carbsRestPerKg}/${v.proteinPerKg}`;
+                    return `
+                      <td>
+                        <button class="quota-cell" type="button" data-role="quota-pick" data-h="${h}" data-w="${w}">
+                          <div class="line1">${val}</div>
+                          <div class="line2">训/休/蛋</div>
+                        </button>
+                      </td>
+                    `;
+                  }).join("")}
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+    grid.innerHTML = header;
+
+    grid.querySelectorAll('[data-role="quota-pick"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const h = parseInt(btn.getAttribute("data-h"), 10);
+        const w = parseInt(btn.getAttribute("data-w"), 10);
+        state.settings.gender = quotaModalState.gender;
+        state.settings.phase = quotaModalState.phase;
+        state.settings.heightCm = h;
+        state.settings.weightKg = w;
+        state.settings.fatGrams = defaultFatGrams(state.settings.gender, state.settings.phase);
+        const suggestion = getQuotaExact(quotaModalState.gender, quotaModalState.phase, w, h)
+          ? { heightCm: h, weightKg: w, ...getQuotaExact(quotaModalState.gender, quotaModalState.phase, w, h) }
+          : null;
+        applyQuotaSuggestionToSettings(suggestion, { alsoSetFatDefault: true });
+        closeQuotaModal();
+      });
+    });
+  }
+
+  function calcDayTotals(dayLog) {
+    let protein = 0, carbs = 0, fat = 0;
+    dayLog.meals.forEach(meal => {
+      meal.entries.forEach(entry => {
+        const food = state.foods.find(f => f.id === entry.foodId);
+        if (!food) return;
+        const macros = calcEntryMacros(food, entry.grams);
+        protein += macros.protein;
+        carbs += macros.carbs;
+        fat += macros.fat;
+      });
+    });
+    return { protein, carbs, fat };
+  }
+
+  function renderDaySummary() {
+    const dayLog = getOrCreateDayLog(state.currentDate);
+    const totals = calcDayTotals(dayLog);
+    const targets = calcDailyTargets(state.settings);
+    const box = document.getElementById("daySummary");
+
+    const items = [
+      { key: "protein", label: "蛋白质", color: "#2f80ed", target: targets.proteinTarget },
+      { key: "carbs", label: "碳水", color: "#27ae60", target: targets.carbsTarget },
+      { key: "fat", label: "脂肪", color: "#f2c94c", target: targets.fatTarget }
+    ];
+
+    box.innerHTML = items.map(item => {
+      const curr = totals[item.key];
+      const percent = calcPercentage(curr, item.target);
+      const over = percent > 100;
+      return `
+        <div class="macro-item">
+          <div class="macro-label">
+            <span class="macro-name">${item.label}</span>
+            <span class="macro-values">
+              ${curr.toFixed(1)} g / ${item.target.toFixed(0)} g · ${percent}%
+            </span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar ${over ? "over" : ""}" style="width:${Math.min(percent, 130)}%; background:${over ? "linear-gradient(90deg,#eb5757,#f2994a)" : ""};"></div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function calcMealTotals(meal) {
+    let protein = 0, carbs = 0, fat = 0;
+    meal.entries.forEach(entry => {
+      const food = state.foods.find(f => f.id === entry.foodId);
+      if (!food) return;
+      const macros = calcEntryMacros(food, entry.grams);
+      protein += macros.protein;
+      carbs += macros.carbs;
+      fat += macros.fat;
+    });
+    return { protein, carbs, fat };
+  }
+
+  function renderMeals() {
+    const dayLog = getOrCreateDayLog(state.currentDate);
+    const container = document.getElementById("mealsContainer");
+    const foods = state.foods;
+
+    container.innerHTML = dayLog.meals.map(meal => {
+      const totals = calcMealTotals(meal);
+      const optionsBuiltIn = foods
+        .filter(f => f.systemBuiltIn)
+        .map(f => `<option value="${f.id}">${f.name}</option>`)
+        .join("");
+      const optionsUser = foods
+        .filter(f => !f.systemBuiltIn)
+        .map(f => `<option value="${f.id}">${f.name} · 我的</option>`)
+        .join("");
+
+      const entriesHTML = meal.entries.map(entry => {
+        const food = foods.find(f => f.id === entry.foodId);
+        if (!food) {
+          return `
+            <div class="entry" data-meal-id="${meal.id}" data-entry-id="${entry.id}">
+              <div class="entry-main">
+                <span class="entry-name">（已删除食物）· ${entry.grams} g</span>
+                <span class="entry-macros">该条记录关联的食物已从食物库删除</span>
+              </div>
+              <div class="entry-actions">
+                <button class="btn btn-danger-outline btn-xs" type="button" data-role="delete-entry">删除</button>
+              </div>
+            </div>
+          `;
+        }
+        const macros = calcEntryMacros(food, entry.grams);
+        return `
+          <div class="entry" data-meal-id="${meal.id}" data-entry-id="${entry.id}">
+            <div class="entry-main">
+              <span class="entry-name">${food.name} · ${entry.grams} g</span>
+              <span class="entry-macros">
+                P ${macros.protein.toFixed(1)} · C ${macros.carbs.toFixed(1)} · F ${macros.fat.toFixed(1)}
+              </span>
+            </div>
+            <div class="entry-actions">
+              <button class="btn btn-danger-outline btn-xs" type="button" data-role="delete-entry">删除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="meal" data-meal-id="${meal.id}">
+          <div class="meal-header">
+            <div class="meal-title">${meal.name}</div>
+            <div class="meal-subtotal">
+              小计：P ${totals.protein.toFixed(1)} · C ${totals.carbs.toFixed(1)} · F ${totals.fat.toFixed(1)}
+            </div>
+          </div>
+          <div class="meal-form">
+            <div class="meal-form-row">
+              <select data-role="food-select">
+                <option value="">选择食物...</option>
+                <optgroup label="系统内置">
+                  ${optionsBuiltIn}
+                </optgroup>
+                ${optionsUser ? `<optgroup label="我的食物">${optionsUser}</optgroup>` : ""}
+              </select>
+              <input type="number" min="1" step="1" placeholder="重量 g" data-role="grams-input" />
+            </div>
+            <button class="btn btn-outline" type="button" data-role="add-entry">添加到${meal.name}</button>
+          </div>
+          <div class="entries">
+            ${entriesHTML || `<span style="font-size:11px;color:#999;">暂无记录，先添加一条吧。</span>`}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".meal").forEach(mealEl => {
+      const mealId = mealEl.getAttribute("data-meal-id");
+      const addBtn = mealEl.querySelector('[data-role="add-entry"]');
+      const foodSelect = mealEl.querySelector('[data-role="food-select"]');
+      const gramsInput = mealEl.querySelector('[data-role="grams-input"]');
+
+      addBtn.addEventListener("click", () => {
+        const foodId = foodSelect.value;
+        const grams = parseFloat(gramsInput.value);
+        if (!foodId) {
+          alert("请选择食物");
+          return;
+        }
+        if (!grams || grams <= 0) {
+          alert("请输入合法的重量（g）");
+          return;
+        }
+        addEntryToMeal(mealId, foodId, grams);
+        gramsInput.value = "";
+      });
+
+      mealEl.querySelectorAll('[data-role="delete-entry"]').forEach(btn => {
+        btn.addEventListener("click", () => {
+          const entryEl = btn.closest(".entry");
+          const entryId = entryEl.getAttribute("data-entry-id");
+          deleteEntryFromMeal(mealId, entryId);
+        });
+      });
+    });
+  }
+
+  function addEntryToMeal(mealId, foodId, grams) {
+    const dayLog = getOrCreateDayLog(state.currentDate);
+    const meal = dayLog.meals.find(m => m.id === mealId);
+    if (!meal) return;
+    meal.entries.push({
+      id: "entry_" + Date.now() + "_" + Math.random().toString(16).slice(2),
+      foodId,
+      grams
+    });
+    saveJSON(STORAGE_KEYS.LOGS, state.logs);
+    renderMeals();
+    renderDaySummary();
+  }
+
+  function deleteEntryFromMeal(mealId, entryId) {
+    const dayLog = getOrCreateDayLog(state.currentDate);
+    const meal = dayLog.meals.find(m => m.id === mealId);
+    if (!meal) return;
+    meal.entries = meal.entries.filter(e => e.id !== entryId);
+    saveJSON(STORAGE_KEYS.LOGS, state.logs);
+    renderMeals();
+    renderDaySummary();
+  }
+
+  function renderFoodsList() {
+    const listEl = document.getElementById("foodsList");
+    const builtIn = state.foods.filter(f => f.systemBuiltIn);
+    const userFoods = state.foods.filter(f => !f.systemBuiltIn);
+
+    function foodRow(f, isUser) {
+      return `
+        <div class="food-item">
+          <div>
+            <div class="food-name">
+              ${f.name}
+              <span class="tag ${isUser ? "tag-user" : ""}">${isUser ? "我的" : "系统"}</span>
+            </div>
+            <div class="food-macros">
+              每 100g：P ${f.proteinPer100g} · C ${f.carbsPer100g} · F ${f.fatPer100g}
+            </div>
+          </div>
+          ${isUser ? `
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="btn btn-outline" type="button" data-role="edit-food" data-food-id="${f.id}">修改</button>
+              <button class="btn btn-danger-outline" type="button" data-role="delete-food" data-food-id="${f.id}">删除</button>
+            </div>
+          ` : `
+            <span style="font-size:11px;color:#999;">内置</span>
+          `}
+        </div>
+      `;
+    }
+
+    listEl.innerHTML = `
+      ${builtIn.map(f => foodRow(f, false)).join("")}
+      ${userFoods.length ? `<div style="font-size:11px;color:#999;margin-top:4px;">我的食物</div>` : ""}
+      ${userFoods.map(f => foodRow(f, true)).join("")}
+    `;
+
+    listEl.querySelectorAll('[data-role="edit-food"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const foodId = btn.getAttribute("data-food-id");
+        startEditFood(foodId);
+      });
+    });
+
+    listEl.querySelectorAll('[data-role="delete-food"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const foodId = btn.getAttribute("data-food-id");
+        deleteFood(foodId);
+      });
+    });
+  }
+
+  function setFoodFormMode() {
+    const addBtn = document.getElementById("addFoodBtn");
+    const cancelBtn = document.getElementById("cancelEditFoodBtn");
+    if (state.editingFoodId) {
+      addBtn.textContent = "保存修改";
+      cancelBtn.style.display = "inline-flex";
+    } else {
+      addBtn.textContent = "保存到我的食物";
+      cancelBtn.style.display = "none";
+    }
+  }
+
+  function resetFoodForm() {
+    document.getElementById("foodNameInput").value = "";
+    document.getElementById("foodProteinInput").value = "";
+    document.getElementById("foodCarbsInput").value = "";
+    document.getElementById("foodFatInput").value = "";
+  }
+
+  function startEditFood(foodId) {
+    const food = state.foods.find(f => f.id === foodId);
+    if (!food || food.systemBuiltIn) return;
+    state.editingFoodId = foodId;
+    document.getElementById("foodNameInput").value = food.name;
+    document.getElementById("foodProteinInput").value = food.proteinPer100g;
+    document.getElementById("foodCarbsInput").value = food.carbsPer100g;
+    document.getElementById("foodFatInput").value = food.fatPer100g;
+    setFoodFormMode();
+    document.getElementById("foodNameInput").focus();
+  }
+
+  function cancelEditFood() {
+    state.editingFoodId = null;
+    resetFoodForm();
+    setFoodFormMode();
+  }
+
+  function upsertCustomFood() {
+    const nameInput = document.getElementById("foodNameInput");
+    const pInput = document.getElementById("foodProteinInput");
+    const cInput = document.getElementById("foodCarbsInput");
+    const fInput = document.getElementById("foodFatInput");
+
+    const name = nameInput.value.trim();
+    const p = parseFloat(pInput.value);
+    const c = parseFloat(cInput.value);
+    const f = parseFloat(fInput.value);
+
+    if (!name) {
+      alert("请输入食物名称");
+      return;
+    }
+    if ([p, c, f].some(v => isNaN(v) || v < 0)) {
+      alert("请填写合法的营养数据（可为 0）");
+      return;
+    }
+
+    if (state.editingFoodId) {
+      const idx = state.foods.findIndex(f => f.id === state.editingFoodId);
+      if (idx === -1 || state.foods[idx].systemBuiltIn) {
+        alert("要修改的食物不存在，可能已被删除。");
+        cancelEditFood();
+        return;
+      }
+      state.foods[idx] = {
+        ...state.foods[idx],
+        name,
+        proteinPer100g: p,
+        carbsPer100g: c,
+        fatPer100g: f
+      };
+      state.editingFoodId = null;
+    } else {
+      const id = "user_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+      state.foods.push({
+        id,
+        name,
+        proteinPer100g: p,
+        carbsPer100g: c,
+        fatPer100g: f,
+        systemBuiltIn: false
+      });
+    }
+    saveJSON(STORAGE_KEYS.FOODS, state.foods);
+    renderFoodsList();
+    renderMeals();
+    renderDaySummary();
+
+    resetFoodForm();
+    setFoodFormMode();
+  }
+
+  function deleteFood(foodId) {
+    const food = state.foods.find(f => f.id === foodId);
+    if (!food) return;
+    if (food.systemBuiltIn) {
+      alert("系统内置食物不支持删除。");
+      return;
+    }
+    const ok = confirm(`确定删除「${food.name}」吗？\n删除后，历史记录里引用它的条目会保留，但会显示为“已删除食物”。`);
+    if (!ok) return;
+
+    state.foods = state.foods.filter(f => f.id !== foodId);
+    saveJSON(STORAGE_KEYS.FOODS, state.foods);
+
+    if (state.editingFoodId === foodId) {
+      cancelEditFood();
+    }
+
+    renderFoodsList();
+    renderMeals();
+    renderDaySummary();
+  }
+
+  function setupEventListeners() {
+    // 排行榜弹窗
+    document.getElementById("openRankModalBtn")?.addEventListener("click", async () => {
+      openRankModal();
+      setRankTab(state.rankTab);
+      const inputBtn = document.getElementById("openRankInputModalBtn");
+      const viewHint = document.getElementById("rankViewHint");
+      if (inputBtn) inputBtn.style.display = sb ? "inline-flex" : "none";
+      if (viewHint) {
+        viewHint.textContent = sb
+          ? "提示：点击“我的数据”可以录入并上传你的今日数据；体重默认读取主页面配置。"
+          : "当前无法连接在线服务（Supabase），无法拉取/上传榜单。你仍可继续使用本地记录功能。";
+      }
+      await fetchAndRenderRank(state.currentDate);
+    });
+    document.getElementById("closeRankModalBtn")?.addEventListener("click", closeRankModal);
+    document.getElementById("rankModalBackdrop")?.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "rankModalBackdrop") closeRankModal();
+    });
+    document.getElementById("openRankInputModalBtn")?.addEventListener("click", () => {
+      if (!sb) return alert("当前无法连接在线服务（Supabase）。");
+      const hint = document.getElementById("rankInputHint");
+      const bw = state.settings?.weightKg;
+      if (hint) {
+        hint.textContent = `体重自动读取主页面配置：${Number(bw) ? bw.toFixed(1) : "未填写"} kg。建议先点击“保存配置”。`;
+      }
+      fillRankMineForm(loadRankProfile());
+      openRankInputModal();
+    });
+
+    // 我的数据弹窗
+    document.getElementById("closeRankInputModalBtn")?.addEventListener("click", closeRankInputModal);
+    document.getElementById("rankInputModalBackdrop")?.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "rankInputModalBackdrop") closeRankInputModal();
+    });
+    document.getElementById("rankTabKcalBtn")?.addEventListener("click", async () => {
+      setRankTab("kcal");
+      await fetchAndRenderRank(state.currentDate);
+    });
+    document.getElementById("rankTabStrengthBtn")?.addEventListener("click", async () => {
+      setRankTab("strength");
+      const sortSel = document.getElementById("rankSortSelect");
+      if (sortSel && sortSel.value.startsWith("kcal")) sortSel.value = "total_desc";
+      await fetchAndRenderRank(state.currentDate);
+    });
+    document.getElementById("rankSortSelect")?.addEventListener("change", async () => {
+      await fetchAndRenderRank(state.currentDate);
+    });
+    document.getElementById("rankRefreshBtn")?.addEventListener("click", async () => {
+      await fetchAndRenderRank(state.currentDate);
+    });
+    document.getElementById("rankSaveLocalBtn")?.addEventListener("click", () => {
+      saveRankProfile(readRankMineForm());
+      alert("已保存到本地。");
+    });
+    document.getElementById("rankUploadTodayBtn")?.addEventListener("click", async () => {
+      try {
+        await uploadMyLeaderboard(state.currentDate);
+        alert("已上传/更新。");
+        closeRankInputModal();
+        await fetchAndRenderRank(state.currentDate);
+      } catch (e) {
+        alert(`上传失败：${e.message || e}`);
+      }
+    });
+
+    document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+      const heightCm = parseFloat(document.getElementById("heightInput").value);
+      const weightKg = parseFloat(document.getElementById("weightInput").value);
+      const gender = document.getElementById("genderSelect").value;
+      const phase = document.getElementById("phaseSelect").value;
+      const pp = parseFloat(document.getElementById("proteinPerKgInput").value);
+      const cTrain = parseFloat(document.getElementById("carbsTrainingPerKgInput").value);
+      const cRest = parseFloat(document.getElementById("carbsRestPerKgInput").value);
+      const fatG = parseFloat(document.getElementById("fatGramsInput").value);
+
+      if (!heightCm || heightCm <= 0) {
+        alert("请输入合法的身高");
+        return;
+      }
+      if (!weightKg || weightKg <= 0) {
+        alert("请输入合法的体重");
+        return;
+      }
+      state.settings = normalizeSettings({
+        ...state.settings,
+        heightCm,
+        weightKg,
+        gender,
+        phase,
+        proteinPerKg: isNaN(pp) ? state.settings.proteinPerKg : pp,
+        carbsTrainingPerKg: isNaN(cTrain) ? state.settings.carbsTrainingPerKg : cTrain,
+        carbsRestPerKg: isNaN(cRest) ? state.settings.carbsRestPerKg : cRest,
+        fatGrams: isNaN(fatG) ? state.settings.fatGrams : fatG
+      });
+
+      saveJSON(STORAGE_KEYS.SETTINGS, state.settings);
+      renderSettings();
+      renderDaySummary();
+    });
+
+    document.getElementById("dayTypeTrainingBtn").addEventListener("click", () => setDayType("training"));
+    document.getElementById("dayTypeRestBtn").addEventListener("click", () => setDayType("rest"));
+
+    document.getElementById("autoFromQuotaBtn").addEventListener("click", autoFillFromQuotaForCurrentInputs);
+    document.getElementById("viewQuotaBtn").addEventListener("click", openQuotaModal);
+    document.getElementById("closeQuotaModalBtn").addEventListener("click", closeQuotaModal);
+
+    document.getElementById("quotaModalBackdrop").addEventListener("click", (e) => {
+      if (e.target && e.target.id === "quotaModalBackdrop") closeQuotaModal();
+    });
+
+    document.getElementById("quotaGenderMaleBtn").addEventListener("click", () => {
+      quotaModalState.gender = "male";
+      renderQuotaModal();
+    });
+    document.getElementById("quotaGenderFemaleBtn").addEventListener("click", () => {
+      quotaModalState.gender = "female";
+      renderQuotaModal();
+    });
+    document.getElementById("quotaPhaseBulkBtn").addEventListener("click", () => {
+      quotaModalState.phase = "bulk";
+      renderQuotaModal();
+    });
+    document.getElementById("quotaPhaseCutBtn").addEventListener("click", () => {
+      quotaModalState.phase = "cut";
+      renderQuotaModal();
+    });
+
+    // 当性别/阶段变化时，脂肪默认值跟随规则（不强制覆盖用户手动改过的值）
+    document.getElementById("genderSelect").addEventListener("change", () => {
+      const gender = document.getElementById("genderSelect").value;
+      const phase = document.getElementById("phaseSelect").value;
+      state.settings.gender = gender;
+      state.settings.phase = phase;
+      state.settings.fatGrams = defaultFatGrams(gender, phase);
+      saveJSON(STORAGE_KEYS.SETTINGS, state.settings);
+      renderSettings();
+      renderDaySummary();
+    });
+    document.getElementById("phaseSelect").addEventListener("change", () => {
+      const gender = document.getElementById("genderSelect").value;
+      const phase = document.getElementById("phaseSelect").value;
+      state.settings.gender = gender;
+      state.settings.phase = phase;
+      state.settings.fatGrams = defaultFatGrams(gender, phase);
+      saveJSON(STORAGE_KEYS.SETTINGS, state.settings);
+      renderSettings();
+      renderDaySummary();
+    });
+
+    document.getElementById("addFoodBtn").addEventListener("click", upsertCustomFood);
+    document.getElementById("cancelEditFoodBtn").addEventListener("click", cancelEditFood);
+
+    // 已移除：本地 JSON 导出/导入
+
+    // 同步弹窗
+    const closeSyncBtn = document.getElementById("closeSyncModalBtn");
+    if (closeSyncBtn) {
+      closeSyncBtn.addEventListener("click", closeSyncModal);
+    }
+    const syncBackdrop = document.getElementById("syncModalBackdrop");
+    if (syncBackdrop) {
+      syncBackdrop.addEventListener("click", (e) => {
+        if (e.target && e.target.id === "syncModalBackdrop") closeSyncModal();
+      });
+    }
+
+    const dateInput = document.getElementById("dateInput");
+    dateInput.addEventListener("change", () => {
+      const v = dateInput.value;
+      if (!v) return;
+      state.currentDate = v;
+      getOrCreateDayLog(state.currentDate);
+      renderMeals();
+      renderDaySummary();
+      // 若排行榜弹窗正在打开，切换日期时自动刷新榜单
+      const rankBackdrop = document.getElementById("rankModalBackdrop");
+      if (rankBackdrop && rankBackdrop.style.display === "flex") {
+        fetchAndRenderRank(state.currentDate);
+      }
+    });
+  }
+
+  function initDateInput() {
+    const dateInput = document.getElementById("dateInput");
+    dateInput.value = state.currentDate;
+  }
+
+  function initApp() {
+    initSettings();
+    initFoods();
+    initLogs();
+    initDateInput();
+    setupEventListeners();
+
+    renderSettings();
+    renderFoodsList();
+    renderMeals();
+    renderDaySummary();
+    setFoodFormMode();
+    setRankTab("kcal");
+    renderRankTable([]);
+
+    // Supabase 初始化（可选）
+    sb = initSupabase();
+    if (sb) {
+      setupOnlineUI();
+    } else {
+      // 在线同步不可用时，给登录按钮一个友好的降级提示，避免“点了没反应”
+      const topBtn = document.getElementById("topAuthBtn");
+      if (topBtn) {
+        topBtn.addEventListener("click", () => {
+          alert("当前无法连接在线同步服务（Supabase），本地记录功能仍可正常使用。");
+        });
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initApp();
+    if ("serviceWorker" in navigator) {
+      try {
+        navigator.serviceWorker.register("service-worker.js");
+      } catch (e) {
+      }
+    }
+  });
+</script>
+</body>
+</html>

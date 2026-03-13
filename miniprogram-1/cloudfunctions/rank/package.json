@@ -1,0 +1,10 @@
+{
+  "name": "rank",
+  "version": "1.0.0",
+  "description": "leaderboard cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}
+

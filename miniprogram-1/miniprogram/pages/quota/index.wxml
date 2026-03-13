@@ -1,0 +1,53 @@
+<view class="page">
+  <view class="toolbar">
+    <view class="segmented">
+      <view class="seg-btn {{gender === 'male' ? 'active' : ''}}" data-gender="male" bindtap="onGenderTap">
+        男性
+      </view>
+      <view class="seg-btn {{gender === 'female' ? 'active' : ''}}" data-gender="female" bindtap="onGenderTap">
+        女性
+      </view>
+    </view>
+
+    <view class="segmented">
+      <view class="seg-btn {{phase === 'bulk' ? 'active' : ''}}" data-phase="bulk" bindtap="onPhaseTap">
+        增肌
+      </view>
+      <view class="seg-btn {{phase === 'cut' ? 'active' : ''}}" data-phase="cut" bindtap="onPhaseTap">
+        减脂
+      </view>
+    </view>
+  </view>
+
+  <scroll-view scroll-y class="table-wrap">
+    <view class="table">
+      <view class="row header">
+        <view class="cell head">体重\身高</view>
+        <view class="cell head" wx:for="{{heights}}" wx:key="*this">{{item}}cm</view>
+      </view>
+
+      <view class="row" wx:for="{{rows}}" wx:for-item="row" wx:key="weight">
+        <view class="cell head">{{row.weight}}kg</view>
+        <view class="cell"
+              wx:for="{{row.cells}}"
+              wx:for-item="cell"
+              wx:key="height"
+              bindtap="onCellTap"
+              data-weight="{{row.weight}}"
+              data-height="{{cell.height}}">
+          <view wx:if="{{cell.value}}">
+            <view class="line1">{{cell.text}}</view>
+            <view class="line2">训/休/蛋</view>
+          </view>
+          <view wx:else class="empty">-</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="hint">
+    每格三个数字分别是：训练日碳水 / 休息日碳水 / 每日蛋白（g/kg 体重）。点击某个格子将把对应倍率写入首页“基础配置”，并设置默认脂肪目标。
+    <view style="margin-top:8rpx;color:#888;">来源：B 站「好人松松」</view>
+  </view>
+</view>
+

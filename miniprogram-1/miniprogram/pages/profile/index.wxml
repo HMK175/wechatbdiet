@@ -1,0 +1,20 @@
+<view class="page">
+  <view class="card">
+    <view class="title">账号资料</view>
+    <view class="hint">昵称与头像会显示在排行榜中。</view>
+
+    <view class="row">
+      <image class="avatar" mode="aspectFill" src="{{avatarUrl || defaultAvatar}}" />
+      <view style="flex:1;">
+        <view class="label">昵称</view>
+        <input class="input" type="text" placeholder="想显示的名字" value="{{nickname}}" bindinput="onNicknameInput" />
+      </view>
+    </view>
+
+    <view class="btn-row">
+      <button class="btn btn-outline" bindtap="onChooseAvatar">选择头像</button>
+      <button class="btn btn-primary" bindtap="onSave">保存</button>
+    </view>
+  </view>
+</view>
+

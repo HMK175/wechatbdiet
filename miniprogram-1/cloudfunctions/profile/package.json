@@ -1,0 +1,10 @@
+{
+  "name": "profile",
+  "version": "1.0.0",
+  "description": "user profile (nickname + avatar) cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}
+
