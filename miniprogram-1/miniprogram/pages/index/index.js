@@ -246,6 +246,15 @@ Page({
       try {
         const payload = this.buildKcalLeaderboardPayload(d);
         if (!payload.bodyweight_kg || payload.bodyweight_kg <= 0) return;
+        // 如果当天没有任何摄入，避免把已有的云端记录覆盖成 0
+        if (
+          (!payload.kcal || payload.kcal <= 0) &&
+          (!payload.protein_g || payload.protein_g <= 0) &&
+          (!payload.carbs_g || payload.carbs_g <= 0) &&
+          (!payload.fat_g || payload.fat_g <= 0)
+        ) {
+          return;
+        }
 
         const sig = `${payload.bodyweight_kg}|${payload.kcal}|${payload.protein_g}|${payload.carbs_g}|${payload.fat_g}`;
         if (this._lastKcalUploadSigByDate[d] === sig) return;

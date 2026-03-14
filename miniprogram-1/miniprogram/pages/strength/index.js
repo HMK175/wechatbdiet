@@ -150,8 +150,11 @@ Page({
       return;
     }
 
-    const dayLog = getOrCreateDayLog(this.data.logs, this.data.dateStr);
-    const totals = calcDayTotals(dayLog, this.data.foods);
+    // 每次上传前重新读取最新日志和食物，避免本页数据与首页不同步导致 P/C/F 计算为 0
+    const latestLogs = loadJSON(STORAGE_KEYS.LOGS, {}) || {};
+    const latestFoods = normalizeFoods(loadJSON(STORAGE_KEYS.FOODS, []) || []);
+    const dayLog = getOrCreateDayLog(latestLogs, this.data.dateStr);
+    const totals = calcDayTotals(dayLog, latestFoods);
     const kcal =
       (Number(totals.protein) || 0) * 4 +
       (Number(totals.carbs) || 0) * 4 +
