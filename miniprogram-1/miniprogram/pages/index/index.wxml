@@ -7,7 +7,6 @@
         <view class="app-subtitle">三大营养素 · 本地 + 云同步</view>
       </view>
       <view class="app-header-right">
-        <view class="header-date">{{dateStr}}</view>
         <view wx:if="{{loggedIn}}" class="header-user" bindtap="onHeaderUserTap">
           <view class="header-avatar">
             <image wx:if="{{headerAvatarUrl}}" class="header-avatar-img" mode="aspectFill" src="{{headerAvatarUrl}}" />

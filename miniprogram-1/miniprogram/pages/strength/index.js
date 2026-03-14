@@ -173,8 +173,10 @@ Page({
       squat_1rm: squat1rm,
     };
 
+    let loadingShown = false;
     try {
       wx.showLoading({ title: "上传中...", mask: true });
+      loadingShown = true;
       await wx.cloud.callFunction({
         name: "rank",
         data: { action: "upload", payload },
@@ -185,7 +187,9 @@ Page({
       console.error("strength upload error", e);
       wx.showToast({ title: "上传失败", icon: "none" });
     } finally {
-      wx.hideLoading();
+      if (loadingShown && typeof wx.hideLoading === "function") {
+        wx.hideLoading();
+      }
     }
   },
 });

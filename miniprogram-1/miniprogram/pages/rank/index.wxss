@@ -57,69 +57,158 @@ page {
   border: 1px solid #d1e2ff;
 }
 
-.btn-primary {
-  background: #2f80ed;
-  color: #ffffff;
-}
-
-.rank-list {
+.rank-table-wrap {
   margin-top: 14rpx;
   border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(15, 35, 71, 0.08);
+  overflow: hidden;
+}
+
+.rank-scroll {
+  width: 100%;
+  height: 720rpx;
+}
+
+.rank-table {
+  min-width: 100%;
+  width: max-content;
+}
+
+.rank-thead,
+.rank-tr {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eef1f7;
+}
+
+.rank-thead {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1;
   background: #f8f9fd;
-  max-height: 520rpx;
-  overflow-y: auto;
+  font-weight: 600;
+  color: #556;
 }
 
-.rank-status {
-  padding: 16rpx;
+.rank-th,
+.rank-td {
+  padding: 12rpx 10rpx;
   font-size: 22rpx;
-  color: #777;
+  text-align: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rank-row {
-  padding: 12rpx 14rpx;
-  border-bottom: 1px solid #e2e7f3;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.rank-th-num,
+.rank-td-num {
+  width: 64rpx;
+  min-width: 64rpx;
 }
 
-.rank-main {
-  max-width: 70%;
+.rank-th-avatar,
+.rank-td-avatar {
+  width: 72rpx;
+  min-width: 72rpx;
 }
 
-.rank-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
+.rank-th-name,
+.rank-td-name {
+  width: 120rpx;
+  min-width: 120rpx;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-th-sort {
+  width: 100rpx;
+  min-width: 100rpx;
+  color: #2f80ed;
+}
+
+.rank-th-sort.active {
+  color: #1a5bbf;
+  font-weight: 700;
+}
+
+.rank-th-fixed {
+  width: 100rpx;
+  min-width: 100rpx;
+  color: #556;
+}
+
+.rank-td-weight {
+  width: 100rpx;
+  min-width: 100rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-tbody .rank-td-num {
+  width: 64rpx;
+  min-width: 64rpx;
+}
+
+.rank-tbody .rank-td-num:not(.rank-td-avatar) {
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-tbody .rank-td-name {
+  width: 120rpx;
+  min-width: 120rpx;
+}
+
+/* 饮食榜：kcal/P/C/F/体重 数据列统一宽度 */
+.rank-tbody .rank-td-num:last-of-type,
+.rank-tbody .rank-td-num:nth-last-of-type(2),
+.rank-tbody .rank-td-num:nth-last-of-type(3),
+.rank-tbody .rank-td-num:nth-last-of-type(4) {
+  width: 100rpx;
+  min-width: 100rpx;
+}
+
+/* 力量榜：卧推/硬拉/深蹲/系数/体重 每列固定宽度，避免数字挤成一串 */
+.rank-tbody .rank-tr .rank-td-num:nth-child(4),
+.rank-tbody .rank-tr .rank-td-num:nth-child(5),
+.rank-tbody .rank-tr .rank-td-num:nth-child(6),
+.rank-tbody .rank-tr .rank-td-num:nth-child(7),
+.rank-tbody .rank-tr .rank-td-num:nth-child(8) {
+  width: 100rpx;
+  min-width: 100rpx;
 }
 
 .avatar {
-  width: 52rpx;
-  height: 52rpx;
+  width: 56rpx;
+  height: 56rpx;
   border-radius: 999rpx;
   background: #eef2ff;
-  flex: 0 0 auto;
+  display: block;
+  margin: 0 auto;
 }
 
-.rank-name {
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 24rpx;
-  color: #333;
+  color: #2f80ed;
+  font-weight: 600;
 }
 
-.rank-sub {
-  margin-top: 4rpx;
+.rank-status {
+  padding: 24rpx;
   font-size: 22rpx;
   color: #777;
-}
-
-.rank-extra {
-  font-size: 22rpx;
-  color: #555;
+  text-align: center;
 }
 
 .hint {
   font-size: 20rpx;
   color: #888;
+  margin-top: 8rpx;
 }
-

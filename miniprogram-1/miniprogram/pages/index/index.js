@@ -410,7 +410,7 @@ Page({
     this.setData({ mealsForToday });
 
     const totals = calcDayTotals(dayLog, foods);
-    const targets = calcDailyTargets(settings);
+    const targets = calcDailyTargets(normalizeSettings(settings));
     const items = [
       { key: "protein", label: "蛋白质", color: "#2f80ed", current: totals.protein, target: targets.proteinTarget },
       { key: "carbs", label: "碳水", color: "#27ae60", current: totals.carbs, target: targets.carbsTarget },
@@ -448,16 +448,15 @@ Page({
 
   // ====== 基础配置相关 ======
   onHeightInput(e) {
-    const v = parseFloat(e.detail.value);
+    // 允许清空或全选替换，不再在输入时强制还原；保存与计算时由 normalizeSettings 兜底
     this.setData({
-      "settings.heightCm": Number.isFinite(v) ? v : this.data.settings.heightCm,
+      "settings.heightCm": e.detail.value,
     });
   },
 
   onWeightInput(e) {
-    const v = parseFloat(e.detail.value);
     this.setData({
-      "settings.weightKg": Number.isFinite(v) ? v : this.data.settings.weightKg,
+      "settings.weightKg": e.detail.value,
     });
   },
 
@@ -587,7 +586,8 @@ Page({
   },
 
   onAutoFromQuotaTap() {
-    const { heightCm, weightKg, gender, phase } = this.data.settings;
+    const norm = normalizeSettings(this.data.settings);
+    const { heightCm, weightKg, gender, phase } = norm;
     if (!heightCm || heightCm <= 0 || !weightKg || weightKg <= 0) {
       wx.showToast({ title: "请先填写身高和体重", icon: "none" });
       return;

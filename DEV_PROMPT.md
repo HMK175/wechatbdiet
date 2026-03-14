@@ -20,7 +20,8 @@
     - `utils/quota.js`：配额表数据与算法（从 Web 版迁移）
   - 云函数（在 `cloudfunctions` 下）：
     - `login`：返回当前用户 openid
-    - `rank`：排行榜读写（集合名 `leaderboard_daily`）
+    - `rank`：排行榜读写（集合名 `leaderboard_daily`；get 时兼容嵌套/扁平文档并扁平化返回）
+    - `profile`：用户昵称、头像存取（集合 `users`）
 
 ## 当前小程序功能概况
 
@@ -29,7 +30,7 @@
    - 首页通过云函数 `login` 获取 `openid`，并存到 `wx.getStorageSync('openid')` 与 `app.globalData.openid`。
 
 2. **首页 `pages/index/index`**
-   - 顶部：登录状态 + `openid` + 当前日期 `dateStr`（`todayStr()`）。
+   - 顶部：登录状态 + 头像 + 昵称（无单独日期行，日期在「今日用餐」旁选择）；当前日期 `dateStr`（`todayStr()`）。
    - **基础配置**
      - 数据结构：`settings`，通过 `normalizeSettings` + `STORAGE_KEYS.SETTINGS` 持久化。
      - 字段：`heightCm, weightKg, gender, phase, dayType, proteinPerKg, carbsTrainingPerKg, carbsRestPerKg, fatGrams`。
@@ -68,13 +69,12 @@
    - 首页「今日用餐」使用相同的数据源（同一个存储 key）。
 
 5. **排行榜页面 `pages/rank/index`**
-   - 使用云函数 `rank` + 集合 `leaderboard_daily`。
-   - 顶部：日期选择 + Tab（kcal / 力量），可刷新当前日期榜单。
-   - 中部：列表展示每个用户的 kcal 或三大项 1RM（包括体重）。
-   - 底部「我的今日数据」：
-     - 手动填写卧推/硬拉/深蹲 1RM。
-     - 程序会从本地 `SETTINGS` 读取体重，从 `LOGS` 读取当前日期的用餐记录，计算 P/C/F 与 kcal；
-     - 调用云函数 `rank` 的 `upload` 动作写入/更新当天自己的记录。
+   - 使用云函数 `rank` + 集合 `leaderboard_daily`；昵称/头像由云函数从集合 `users` 读取后写入榜单记录。
+   - 顶部：日期选择 + Tab（今日 kcal / 力量三大项）+ 刷新榜单。
+   - 表格式展示：列依次为 排名 / 头像 / 用户名 / 数据列 / 体重。
+     - **今日 kcal**：数据列为 kcal、P、C、F；体重仅展示；默认按 kcal 降序，可点表头按 P/C/F 排序。
+     - **力量（三大项）**：数据列为 卧推、硬拉、深蹲、系数（三大项和÷体重）、体重；默认按系数降序，可点表头按单项或体重排序。
+   - 数据上传来源：**kcal** 由首页在登录后自动上传（`scheduleAutoUploadKcal`）；**力量** 由 `pages/strength/index` 页录入卧推/硬拉/深蹲后手动上传到 `rank` 的 `upload`。
 
 ## 下次接入时需要注意的点
 
@@ -83,9 +83,9 @@
    - 配额表页、食物库页、排行榜页都通过本地存储与首页共享数据；
    - 如需扩展字段，请同步更新工具方法（`normalizeSettings/normalizeFoods` 等）。
 3. **云函数与集合名称不要随意改动**：
-   - 云函数：`login`、`rank`
-   - 集合：`leaderboard_daily`
-4. **如果要对排行榜做更复杂的排序/过滤，可以扩展云函数 `rank` 的 `get` 分支，而不是在前端写死逻辑。**
+   - 云函数：`login`、`rank`、`profile`
+   - 集合：`leaderboard_daily`、`users`
+4. **排行榜**：当前排序与系数在前端计算；若需服务端排序/过滤可扩展云函数 `rank` 的 `get`。云函数 get 已兼容 `data.date` 与顶层 `date` 两种文档结构。
 
 ## 建议你（AI）下次接手的工作顺序
 

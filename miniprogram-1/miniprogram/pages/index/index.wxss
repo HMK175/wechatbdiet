@@ -1,7 +1,7 @@
 /** pages/index/index.wxss **/
 
 page {
-  padding: 32rpx 24rpx;
+  padding: 20rpx 24rpx;
   background-color: #f5f7fb;
   box-sizing: border-box;
 }
@@ -9,6 +9,7 @@ page {
 .page {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
 .app-card {
@@ -16,13 +17,13 @@ page {
   max-width: 700rpx;
   background: #ffffff;
   border-radius: 24rpx;
-  padding: 32rpx 28rpx;
+  padding: 24rpx 28rpx;
   box-shadow: 0 12rpx 40rpx rgba(15, 35, 71, 0.08);
   box-sizing: border-box;
 }
 
 .app-header {
-  margin-bottom: 32rpx;
+  margin-bottom: 20rpx;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -47,11 +48,6 @@ page {
   gap: 8rpx;
 }
 
-.header-date {
-  font-size: 22rpx;
-  color: #2f80ed;
-}
-
 .header-user {
   display: flex;
   align-items: center;
@@ -59,8 +55,8 @@ page {
 }
 
 .header-avatar {
-  width: 64rpx;
-  height: 64rpx;
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 999rpx;
   background: #eef2ff;
   display: flex;
@@ -80,7 +76,7 @@ page {
 }
 
 .header-user-text {
-  font-size: 24rpx;
+  font-size: 28rpx;
   color: #555;
   font-weight: 500;
 }
@@ -113,10 +109,10 @@ page {
 }
 
 .content {
-  margin-top: 8rpx;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .info-row {
@@ -294,14 +290,37 @@ page {
 }
 
 .section {
-  margin-top: 24rpx;
-  padding-top: 16rpx;
+  margin-top: 20rpx;
+  padding-top: 12rpx;
   border-top: 1px dashed #e0e4ee;
 }
 
 .section.section-compact {
-  margin-top: 12rpx;
-  padding-top: 8rpx;
+  margin-top: 4rpx;
+  padding-top: 4rpx;
+  padding-bottom: 2rpx;
+}
+
+.section-compact .section-title-row {
+  margin-bottom: 2rpx;
+  align-items: center;
+}
+
+.section-compact .section-title-row .section-title {
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+}
+
+.section-compact .section-title-row .btn {
+  height: 68rpx;
+  line-height: 1;
+  padding: 0 24rpx;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120rpx;
 }
 
 .section-title-row {

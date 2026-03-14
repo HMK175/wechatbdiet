@@ -57,21 +57,28 @@ Page({
       const path = file && file.tempFilePath;
       if (!path) return;
 
+      let loadingShown = false;
       wx.showLoading({ title: "上传头像...", mask: true });
-      const openid = wx.getStorageSync("openid");
-      const ext = (path.split(".").pop() || "jpg").toLowerCase();
-      const cloudPath = `avatars/${openid}_${Date.now()}.${ext}`;
-      const up = await wx.cloud.uploadFile({ cloudPath, filePath: path });
-      const fileID = up && up.fileID;
-      if (!fileID) throw new Error("上传失败");
-
-      this.setData({ avatarUrl: fileID });
-      saveJSON(STORAGE_KEYS.PROFILE, { nickname: this.data.nickname, avatarUrl: this.data.avatarUrl });
+      loadingShown = true;
+      try {
+        const openid = wx.getStorageSync("openid");
+        const ext = (path.split(".").pop() || "jpg").toLowerCase();
+        const cloudPath = `avatars/${openid}_${Date.now()}.${ext}`;
+        const up = await wx.cloud.uploadFile({ cloudPath, filePath: path });
+        const fileID = up && up.fileID;
+        if (!fileID) throw new Error("上传失败");
+        this.setData({ avatarUrl: fileID });
+        saveJSON(STORAGE_KEYS.PROFILE, { nickname: this.data.nickname, avatarUrl: this.data.avatarUrl });
+      } catch (e) {
+        console.error("choose/upload avatar failed", e);
+        wx.showToast({ title: "头像上传失败", icon: "none" });
+      } finally {
+        if (loadingShown && typeof wx.hideLoading === "function") {
+          wx.hideLoading();
+        }
+      }
     } catch (e) {
-      console.error("choose/upload avatar failed", e);
-      wx.showToast({ title: "头像上传失败", icon: "none" });
-    } finally {
-      wx.hideLoading();
+      // chooseMedia 等异常，未显示 loading，不调用 hideLoading
     }
   },
 
@@ -86,8 +93,10 @@ Page({
       wx.showToast({ title: "请输入昵称", icon: "none" });
       return;
     }
+    let loadingShown = false;
     try {
       wx.showLoading({ title: "保存中...", mask: true });
+      loadingShown = true;
       await wx.cloud.callFunction({
         name: "profile",
         data: { action: "set", nickname, avatarUrl: this.data.avatarUrl || "" },
@@ -100,7 +109,9 @@ Page({
       saveJSON(STORAGE_KEYS.PROFILE, { nickname, avatarUrl: this.data.avatarUrl || "" });
       wx.showToast({ title: "云端保存失败，已保存到本地", icon: "none" });
     } finally {
-      wx.hideLoading();
+      if (loadingShown && typeof wx.hideLoading === "function") {
+        wx.hideLoading();
+      }
     }
   },
 });

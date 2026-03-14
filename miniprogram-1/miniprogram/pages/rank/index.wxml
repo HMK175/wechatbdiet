@@ -24,49 +24,80 @@
     {{rankError}}
   </view>
 
-  <view class="rank-list">
+  <view class="rank-table-wrap">
     <view wx:if="{{rankLoading}}" class="rank-status">加载中...</view>
-    <view wx:elif="{{!rankRows.length}}" class="rank-status">
+    <view wx:elif="{{!displayRows.length}}" class="rank-status">
       {{rankError || '暂无数据'}}
     </view>
-    <view wx:else>
-      <block wx:if="{{rankTab === 'kcal'}}">
-        <view wx:for="{{rankRows}}"
-              wx:for-item="row"
-              wx:key="_id"
-              class="rank-row">
-          <view class="rank-main">
-            <view class="rank-title-row">
-              <image wx:if="{{row.avatarUrl}}" class="avatar" mode="aspectFill" src="{{row.avatarUrl}}" />
-              <view class="rank-name">#{{index + 1}} {{row.nickname || (row._openid && row._openid.slice(0, 8)) || '匿名'}}</view>
-            </view>
-            <view class="rank-sub">
-              kcal {{row.kcal}} · P {{row.protein_g}} · C {{row.carbs_g}} · F {{row.fat_g}}
-            </view>
-          </view>
-          <view class="rank-extra">{{row.bodyweight_kg}} kg</view>
+    <scroll-view wx:else scroll-x scroll-y class="rank-scroll">
+      <view class="rank-table">
+        <!-- 表头 -->
+        <view class="rank-thead">
+          <view class="rank-th rank-th-num">排名</view>
+          <view class="rank-th rank-th-avatar">头像</view>
+          <view class="rank-th rank-th-name">用户名</view>
+          <block wx:if="{{rankTab === 'kcal'}}">
+            <view class="rank-th rank-th-sort {{sortKey === 'kcal' ? 'active' : ''}}"
+                  data-key="kcal"
+                  bindtap="onHeaderTap">kcal {{sortKey === 'kcal' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'protein_g' ? 'active' : ''}}"
+                  data-key="protein_g"
+                  bindtap="onHeaderTap">P {{sortKey === 'protein_g' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'carbs_g' ? 'active' : ''}}"
+                  data-key="carbs_g"
+                  bindtap="onHeaderTap">C {{sortKey === 'carbs_g' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'fat_g' ? 'active' : ''}}"
+                  data-key="fat_g"
+                  bindtap="onHeaderTap">F {{sortKey === 'fat_g' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-fixed">体重</view>
+          </block>
+          <block wx:else>
+            <view class="rank-th rank-th-sort {{sortKey === 'bench_1rm' ? 'active' : ''}}"
+                  data-key="bench_1rm"
+                  bindtap="onHeaderTap">卧推 {{sortKey === 'bench_1rm' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'deadlift_1rm' ? 'active' : ''}}"
+                  data-key="deadlift_1rm"
+                  bindtap="onHeaderTap">硬拉 {{sortKey === 'deadlift_1rm' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'squat_1rm' ? 'active' : ''}}"
+                  data-key="squat_1rm"
+                  bindtap="onHeaderTap">深蹲 {{sortKey === 'squat_1rm' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'coefficient' ? 'active' : ''}}"
+                  data-key="coefficient"
+                  bindtap="onHeaderTap">系数 {{sortKey === 'coefficient' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+            <view class="rank-th rank-th-sort {{sortKey === 'bodyweight_kg' ? 'active' : ''}}"
+                  data-key="bodyweight_kg"
+                  bindtap="onHeaderTap">体重 {{sortKey === 'bodyweight_kg' ? (sortOrder === 'desc' ? '↓' : '↑') : ''}}</view>
+          </block>
         </view>
-      </block>
-      <block wx:elif="{{rankTab === 'strength'}}">
-        <view wx:for="{{rankRows}}"
-              wx:for-item="row"
-              wx:key="_id"
-              class="rank-row">
-          <view class="rank-main">
-            <view class="rank-title-row">
+        <!-- 数据行 -->
+        <view class="rank-tbody">
+          <view wx:for="{{displayRows}}"
+                wx:for-item="row"
+                wx:key="_id"
+                class="rank-tr">
+            <view class="rank-td rank-td-num">{{index + 1}}</view>
+            <view class="rank-td rank-td-avatar">
               <image wx:if="{{row.avatarUrl}}" class="avatar" mode="aspectFill" src="{{row.avatarUrl}}" />
-              <view class="rank-name">#{{index + 1}} {{row.nickname || (row._openid && row._openid.slice(0, 8)) || '匿名'}}</view>
+              <view wx:else class="avatar avatar-fallback">{{row.nickname ? row.nickname.slice(0,1) : '?'}}</view>
             </view>
-            <view class="rank-sub">
-              卧推 {{row.bench_1rm || '-'}} · 硬拉 {{row.deadlift_1rm || '-'}} · 深蹲 {{row.squat_1rm || '-'}}
-            </view>
-          </view>
-          <view class="rank-extra">
-            {{row.bodyweight_kg}} kg
+            <view class="rank-td rank-td-name">{{row.nickname || (row._openid && row._openid.slice(0, 8)) || '匿名'}}</view>
+            <block wx:if="{{rankTab === 'kcal'}}">
+              <view class="rank-td rank-td-num">{{row.kcal != null ? row.kcal : '-'}}</view>
+              <view class="rank-td rank-td-num">{{row.protein_g != null ? row.protein_g : '-'}}</view>
+              <view class="rank-td rank-td-num">{{row.carbs_g != null ? row.carbs_g : '-'}}</view>
+              <view class="rank-td rank-td-num">{{row.fat_g != null ? row.fat_g : '-'}}</view>
+              <view class="rank-td rank-td-num rank-td-weight">{{row.bodyweight_kg != null ? row.bodyweight_kg : '-'}}</view>
+            </block>
+            <block wx:else>
+              <view class="rank-td rank-td-num">{{row.bench_1rm_display || '-'}}</view>
+              <view class="rank-td rank-td-num">{{row.deadlift_1rm_display || '-'}}</view>
+              <view class="rank-td rank-td-num">{{row.squat_1rm_display || '-'}}</view>
+              <view class="rank-td rank-td-num">{{row.coefficient_display || '-'}}</view>
+              <view class="rank-td rank-td-num rank-td-weight">{{row.bodyweight_kg_display || '-'}}</view>
+            </block>
           </view>
         </view>
-      </block>
-    </view>
+      </view>
+    </scroll-view>
   </view>
 </view>
-

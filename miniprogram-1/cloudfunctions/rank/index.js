@@ -13,16 +13,67 @@ exports.main = async (event, context) => {
   const { action } = event || {};
 
   if (action === "get") {
-    const date = event.date;
+    let date = event.date;
     if (!date) {
       return { code: 400, message: "date is required" };
     }
-    const { data } = await db
-      .collection(COLLECTION)
-      .where({ date })
-      .orderBy("updatedAt", "desc")
-      .get();
-    return { code: 0, data };
+    // 统一为 YYYY-MM-DD，避免与库里格式不一致查不到
+    if (typeof date === "string" && date.length >= 10) {
+      date = date.slice(0, 10);
+    } else {
+      date = String(date);
+    }
+    let rawList = [];
+    try {
+      const res = await db
+        .collection(COLLECTION)
+        .where({ "data.date": date })
+        .get();
+      rawList = res.data || [];
+    } catch (e) {
+      // 忽略嵌套查询错误，尝试扁平结构
+    }
+    if (rawList.length === 0) {
+      try {
+        const res = await db
+          .collection(COLLECTION)
+          .where({ date })
+          .get();
+        rawList = res.data || [];
+      } catch (e) {
+        // 忽略
+      }
+    }
+    // 若仍为空，尝试拉取近期文档再按 date 过滤（兼容存储结构差异）
+    if (rawList.length === 0) {
+      try {
+        const res = await db.collection(COLLECTION).limit(100).get();
+        const list = res.data || [];
+        rawList = list.filter((doc) => {
+          const d = doc.data && doc.data.date != null ? doc.data.date : doc.date;
+          return d != null && String(d).slice(0, 10) === date;
+        });
+      } catch (e) {
+        // 忽略
+      }
+    }
+    // 扁平化：云文档可能是 { _id, data: { ... } } 或顶层即字段，统一成 { _id, ...fields }
+    const flattened = (rawList || []).map((doc) => {
+      const fields = doc.data != null ? doc.data : doc;
+      const out = { _id: doc._id, ...fields };
+      return out;
+    });
+    flattened.sort((a, b) => {
+      const toTime = (v) => {
+        if (v == null) return 0;
+        if (typeof v.getTime === "function") return v.getTime();
+        if (typeof v === "number") return v;
+        const t = new Date(v).getTime();
+        return Number.isNaN(t) ? 0 : t;
+      };
+      return toTime(b.updatedAt) - toTime(a.updatedAt);
+    });
+    return { code: 0, data: flattened };
   }
 
   if (action === "upload") {
