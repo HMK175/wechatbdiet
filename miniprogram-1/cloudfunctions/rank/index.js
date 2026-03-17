@@ -96,26 +96,28 @@ exports.main = async (event, context) => {
       }
     } else {
       // 力量榜：不与日期关联，按用户取最新一条（避免一个用户多天记录挤满榜单）
-      const res = await db.collection(COLLECTION).limit(500).get();
-      const list = res.data || [];
+      // 关键：必须按 updatedAt 倒序拉取，否则随着数据增多，旧用户记录会因为 limit 被截断而“消失”
+      let list = [];
+      try {
+        const res = await db.collection(COLLECTION).orderBy("updatedAt", "desc").limit(2000).get();
+        list = res.data || [];
+      } catch (e) {
+        // 兼容旧数据只存 data.updatedAt / 或不支持排序的情况
+        const res = await db.collection(COLLECTION).limit(2000).get();
+        list = res.data || [];
+      }
+
+      // 若已经按 updatedAt desc 排序，则每个 openid 第一条就是最新
       const latestByOpenid = new Map();
       list.forEach((doc) => {
         const fields = doc.data != null ? doc.data : doc;
         const openid = fields._openid || doc._openid;
         if (!openid) return;
-        const updatedAt = fields.updatedAt || doc.updatedAt || 0;
-        const prev = latestByOpenid.get(openid);
-        if (!prev) {
-          latestByOpenid.set(openid, { doc, updatedAt });
-          return;
-        }
-        const tPrev = new Date(prev.updatedAt).getTime() || 0;
-        const tNow = new Date(updatedAt).getTime() || 0;
-        if (tNow >= tPrev) {
-          latestByOpenid.set(openid, { doc, updatedAt });
+        if (!latestByOpenid.has(openid)) {
+          latestByOpenid.set(openid, doc);
         }
       });
-      rawList = Array.from(latestByOpenid.values()).map((x) => x.doc);
+      rawList = Array.from(latestByOpenid.values());
     }
     // 扁平化：云文档可能是 { _id, data: { ... } } 或顶层即字段，统一成 { _id, ...fields }
     const flattened = (rawList || []).map((doc) => {
@@ -197,6 +199,8 @@ exports.main = async (event, context) => {
         .collection(COLLECTION)
         .doc(docId)
         .set({
+          // 同时写入顶层字段与 data 字段，兼容旧结构 & 便于 orderBy/where 查询
+          ...payload,
           data: payload,
         });
     } catch (e) {
@@ -206,6 +210,7 @@ exports.main = async (event, context) => {
           .collection(COLLECTION)
           .doc(docId)
           .update({
+            ...payload,
             data: payload,
           });
       } else {

@@ -113,7 +113,7 @@ Page({
         name: "rank",
         data:
           this.data.rankTab === "strength"
-            ? { action: "get", type: "strength", date: this.data.rankDate }
+            ? { action: "get", type: "strength" }
             : { action: "get", type: "kcal", date: this.data.rankDate },
       });
       // 云函数返回在 res.result，可能为 { code: 0, data: [] } 或少数环境多一层 result
