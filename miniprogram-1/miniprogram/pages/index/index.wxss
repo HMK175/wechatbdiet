@@ -495,16 +495,24 @@ page {
   color: #eb5757;
   border-radius: 999rpx;
   border: 1px solid rgba(235, 87, 87, 0.35);
-  /* 小标签尺寸（重点） */
-  height: 65rpx;
-  min-width: 120rpx;
-  padding: 0 24rpx;
-  /* 文字完全在框内、上下左右居中 */
-  font-size: 20rpx;
-  line-height: 40rpx;   /* 和 height 一致 */
-  display: inline-block;
+  /* 小标签风格：框和字体整体变小，同时保持居中且不裁字 */
+  height: 40rpx;
+  min-width: 76rpx;
+  padding: 0 12rpx;
+  font-size: 18rpx;
+  line-height: 40rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   box-sizing: border-box;
+}
+
+/* button 默认样式重置，避免被拉伸/撑开 */
+button.btn-danger {
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 .entries {

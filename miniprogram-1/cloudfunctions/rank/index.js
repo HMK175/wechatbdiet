@@ -13,49 +13,76 @@ exports.main = async (event, context) => {
   const { action } = event || {};
 
   if (action === "get") {
+    const type = event.type === "strength" ? "strength" : "kcal";
     let date = event.date;
-    if (!date) {
+    if (type === "kcal" && !date) {
       return { code: 400, message: "date is required" };
     }
-    // 统一为 YYYY-MM-DD，避免与库里格式不一致查不到
-    if (typeof date === "string" && date.length >= 10) {
-      date = date.slice(0, 10);
-    } else {
-      date = String(date);
+    if (type === "kcal") {
+      // 统一为 YYYY-MM-DD，避免与库里格式不一致查不到
+      if (typeof date === "string" && date.length >= 10) {
+        date = date.slice(0, 10);
+      } else {
+        date = String(date);
+      }
     }
     let rawList = [];
-    try {
-      const res = await db
-        .collection(COLLECTION)
-        .where({ "data.date": date })
-        .get();
-      rawList = res.data || [];
-    } catch (e) {
-      // 忽略嵌套查询错误，尝试扁平结构
-    }
-    if (rawList.length === 0) {
+    if (type === "kcal") {
       try {
         const res = await db
           .collection(COLLECTION)
-          .where({ date })
+          .where({ "data.date": date })
           .get();
         rawList = res.data || [];
       } catch (e) {
-        // 忽略
+        // 忽略嵌套查询错误，尝试扁平结构
       }
-    }
-    // 若仍为空，尝试拉取近期文档再按 date 过滤（兼容存储结构差异）
-    if (rawList.length === 0) {
-      try {
-        const res = await db.collection(COLLECTION).limit(100).get();
-        const list = res.data || [];
-        rawList = list.filter((doc) => {
-          const d = doc.data && doc.data.date != null ? doc.data.date : doc.date;
-          return d != null && String(d).slice(0, 10) === date;
-        });
-      } catch (e) {
-        // 忽略
+      if (rawList.length === 0) {
+        try {
+          const res = await db
+            .collection(COLLECTION)
+            .where({ date })
+            .get();
+          rawList = res.data || [];
+        } catch (e) {
+          // 忽略
+        }
       }
+      // 若仍为空，尝试拉取近期文档再按 date 过滤（兼容存储结构差异）
+      if (rawList.length === 0) {
+        try {
+          const res = await db.collection(COLLECTION).limit(200).get();
+          const list = res.data || [];
+          rawList = list.filter((doc) => {
+            const d = doc.data && doc.data.date != null ? doc.data.date : doc.date;
+            return d != null && String(d).slice(0, 10) === date;
+          });
+        } catch (e) {
+          // 忽略
+        }
+      }
+    } else {
+      // 力量榜：不与日期关联，按用户取最新一条（避免一个用户多天记录挤满榜单）
+      const res = await db.collection(COLLECTION).limit(500).get();
+      const list = res.data || [];
+      const latestByOpenid = new Map();
+      list.forEach((doc) => {
+        const fields = doc.data != null ? doc.data : doc;
+        const openid = fields._openid || doc._openid;
+        if (!openid) return;
+        const updatedAt = fields.updatedAt || doc.updatedAt || 0;
+        const prev = latestByOpenid.get(openid);
+        if (!prev) {
+          latestByOpenid.set(openid, { doc, updatedAt });
+          return;
+        }
+        const tPrev = new Date(prev.updatedAt).getTime() || 0;
+        const tNow = new Date(updatedAt).getTime() || 0;
+        if (tNow >= tPrev) {
+          latestByOpenid.set(openid, { doc, updatedAt });
+        }
+      });
+      rawList = Array.from(latestByOpenid.values()).map((x) => x.doc);
     }
     // 扁平化：云文档可能是 { _id, data: { ... } } 或顶层即字段，统一成 { _id, ...fields }
     const flattened = (rawList || []).map((doc) => {

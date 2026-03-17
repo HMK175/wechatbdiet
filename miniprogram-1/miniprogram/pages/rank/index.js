@@ -78,7 +78,8 @@ Page({
   onRankTabTap(e) {
     const tab = e.currentTarget.dataset.tab === "strength" ? "strength" : "kcal";
     const sortKey = tab === "kcal" ? "kcal" : "coefficient";
-    this.setData({ rankTab: tab, sortKey, sortOrder: "desc" }, () => this.applySort());
+    // 切换 tab 时重新拉取数据：kcal 受日期影响；力量榜不受日期影响但需要最新数据
+    this.setData({ rankTab: tab, sortKey, sortOrder: "desc" }, () => this.fetchRank());
   },
 
   applySort() {
@@ -110,7 +111,10 @@ Page({
     try {
       const res = await wx.cloud.callFunction({
         name: "rank",
-        data: { action: "get", date: this.data.rankDate },
+        data:
+          this.data.rankTab === "strength"
+            ? { action: "get", type: "strength", date: this.data.rankDate }
+            : { action: "get", type: "kcal", date: this.data.rankDate },
       });
       // 云函数返回在 res.result，可能为 { code: 0, data: [] } 或少数环境多一层 result
       const result = res.result != null ? res.result : (res.result === undefined ? res : null);
