@@ -40,14 +40,14 @@
             <view class="settings-item">
               <view class="settings-label">身高 (cm)</view>
               <input class="settings-input"
-                     type="number"
+                     type="digit"
                      value="{{settings.heightCm}}"
                      bindinput="onHeightInput" />
             </view>
             <view class="settings-item">
               <view class="settings-label">体重 (kg)</view>
               <input class="settings-input"
-                     type="number"
+                     type="digit"
                      value="{{settings.weightKg}}"
                      bindinput="onWeightInput" />
             </view>
@@ -108,14 +108,14 @@
             <view class="settings-item">
               <view class="settings-label">蛋白 (g/kg)</view>
               <input class="settings-input"
-                     type="number"
+                     type="digit"
                      value="{{settings.proteinPerKg}}"
                      bindinput="onProteinPerKgInput" />
             </view>
             <view class="settings-item">
               <view class="settings-label">训练日碳水 (g/kg)</view>
               <input class="settings-input"
-                     type="number"
+                     type="digit"
                      value="{{settings.carbsTrainingPerKg}}"
                      bindinput="onCarbsTrainingInput" />
             </view>
@@ -125,14 +125,14 @@
             <view class="settings-item">
               <view class="settings-label">休息日碳水 (g/kg)</view>
               <input class="settings-input"
-                     type="number"
+                     type="digit"
                      value="{{settings.carbsRestPerKg}}"
                      bindinput="onCarbsRestInput" />
             </view>
             <view class="settings-item">
               <view class="settings-label">脂肪目标 (g/天)</view>
               <input class="settings-input"
-                     type="number"
+                     type="digit"
                      value="{{settings.fatGrams}}"
                      bindinput="onFatInput" />
             </view>
@@ -209,7 +209,7 @@
               </view>
 
             <input class="grams-input"
-                   type="number"
+                   type="digit"
                    placeholder="重量 g"
                    data-meal-id="{{item.id}}"
                    value="{{formState[item.id].grams}}"

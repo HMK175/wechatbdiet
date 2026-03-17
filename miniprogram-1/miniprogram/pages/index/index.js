@@ -499,30 +499,26 @@ Page({
   },
 
   onProteinPerKgInput(e) {
-    const v = parseFloat(e.detail.value);
     this.setData({
-      "settings.proteinPerKg": Number.isFinite(v) ? v : this.data.settings.proteinPerKg,
+      "settings.proteinPerKg": e.detail.value,
     });
   },
 
   onCarbsTrainingInput(e) {
-    const v = parseFloat(e.detail.value);
     this.setData({
-      "settings.carbsTrainingPerKg": Number.isFinite(v) ? v : this.data.settings.carbsTrainingPerKg,
+      "settings.carbsTrainingPerKg": e.detail.value,
     });
   },
 
   onCarbsRestInput(e) {
-    const v = parseFloat(e.detail.value);
     this.setData({
-      "settings.carbsRestPerKg": Number.isFinite(v) ? v : this.data.settings.carbsRestPerKg,
+      "settings.carbsRestPerKg": e.detail.value,
     });
   },
 
   onFatInput(e) {
-    const v = parseFloat(e.detail.value);
     this.setData({
-      "settings.fatGrams": Number.isFinite(v) ? v : this.data.settings.fatGrams,
+      "settings.fatGrams": e.detail.value,
     });
   },
 

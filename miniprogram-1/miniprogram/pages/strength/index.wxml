@@ -10,17 +10,17 @@
       <view class="row">
         <view class="item">
           <view class="label">直接 1RM（kg）</view>
-          <input class="input" type="number" placeholder="可不填" value="{{form.bench.direct1rm}}" data-field="bench.direct1rm" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="可不填" value="{{form.bench.direct1rm}}" data-field="bench.direct1rm" bindinput="onInput" />
         </view>
       </view>
       <view class="row">
         <view class="item">
           <view class="label">重量（kg）</view>
-          <input class="input" type="number" placeholder="如 80" value="{{form.bench.weight}}" data-field="bench.weight" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="如 80" value="{{form.bench.weight}}" data-field="bench.weight" bindinput="onInput" />
         </view>
         <view class="item">
           <view class="label">次数</view>
-          <input class="input" type="number" placeholder="如 8" value="{{form.bench.reps}}" data-field="bench.reps" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="如 8" value="{{form.bench.reps}}" data-field="bench.reps" bindinput="onInput" />
         </view>
       </view>
       <view class="preview">估算 1RM：{{preview.bench1rm || '-'}}</view>
@@ -31,17 +31,17 @@
       <view class="row">
         <view class="item">
           <view class="label">直接 1RM（kg）</view>
-          <input class="input" type="number" placeholder="可不填" value="{{form.deadlift.direct1rm}}" data-field="deadlift.direct1rm" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="可不填" value="{{form.deadlift.direct1rm}}" data-field="deadlift.direct1rm" bindinput="onInput" />
         </view>
       </view>
       <view class="row">
         <view class="item">
           <view class="label">重量（kg）</view>
-          <input class="input" type="number" placeholder="如 140" value="{{form.deadlift.weight}}" data-field="deadlift.weight" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="如 140" value="{{form.deadlift.weight}}" data-field="deadlift.weight" bindinput="onInput" />
         </view>
         <view class="item">
           <view class="label">次数</view>
-          <input class="input" type="number" placeholder="如 5" value="{{form.deadlift.reps}}" data-field="deadlift.reps" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="如 5" value="{{form.deadlift.reps}}" data-field="deadlift.reps" bindinput="onInput" />
         </view>
       </view>
       <view class="preview">估算 1RM：{{preview.deadlift1rm || '-'}}</view>
@@ -52,17 +52,17 @@
       <view class="row">
         <view class="item">
           <view class="label">直接 1RM（kg）</view>
-          <input class="input" type="number" placeholder="可不填" value="{{form.squat.direct1rm}}" data-field="squat.direct1rm" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="可不填" value="{{form.squat.direct1rm}}" data-field="squat.direct1rm" bindinput="onInput" />
         </view>
       </view>
       <view class="row">
         <view class="item">
           <view class="label">重量（kg）</view>
-          <input class="input" type="number" placeholder="如 120" value="{{form.squat.weight}}" data-field="squat.weight" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="如 120" value="{{form.squat.weight}}" data-field="squat.weight" bindinput="onInput" />
         </view>
         <view class="item">
           <view class="label">次数</view>
-          <input class="input" type="number" placeholder="如 6" value="{{form.squat.reps}}" data-field="squat.reps" bindinput="onInput" />
+          <input class="input" type="digit" placeholder="如 6" value="{{form.squat.reps}}" data-field="squat.reps" bindinput="onInput" />
         </view>
       </view>
       <view class="preview">估算 1RM：{{preview.squat1rm || '-'}}</view>

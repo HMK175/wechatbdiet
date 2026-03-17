@@ -8,6 +8,39 @@ const db = cloud.database();
 const COLLECTION = "leaderboard_daily";
 const USERS = "users";
 
+async function attachAvatarTempUrls(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const fileIDs = Array.from(
+    new Set(
+      list
+        .map((r) => (r && r.avatarUrl ? String(r.avatarUrl) : ""))
+        .filter((u) => u && u.startsWith("cloud://"))
+    )
+  );
+  if (!fileIDs.length) return list;
+
+  try {
+    const res = await cloud.getTempFileURL({ fileList: fileIDs });
+    const tempList = (res && res.fileList) || [];
+    const map = new Map();
+    tempList.forEach((it) => {
+      if (it && it.fileID && it.tempFileURL) {
+        map.set(String(it.fileID), String(it.tempFileURL));
+      }
+    });
+    return list.map((r) => {
+      const u = r && r.avatarUrl ? String(r.avatarUrl) : "";
+      if (u && u.startsWith("cloud://") && map.has(u)) {
+        return { ...r, avatarUrl: map.get(u) };
+      }
+      return r;
+    });
+  } catch (e) {
+    // 获取临时链接失败则原样返回（不影响其它字段）
+    return list;
+  }
+}
+
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
   const { action } = event || {};
@@ -100,7 +133,8 @@ exports.main = async (event, context) => {
       };
       return toTime(b.updatedAt) - toTime(a.updatedAt);
     });
-    return { code: 0, data: flattened };
+    const withAvatars = await attachAvatarTempUrls(flattened);
+    return { code: 0, data: withAvatars };
   }
 
   if (action === "upload") {
