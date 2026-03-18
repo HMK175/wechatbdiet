@@ -25,3 +25,34 @@ page {
   flex-direction: column;
   justify-content: flex-start;
 }
+
+/* ===== 通用小标签按钮（Chip）===== */
+button.btn-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 12rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  min-width: 0;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+  font-size: 18rpx;
+  text-align: center;
+  white-space: nowrap;
+}
+
+button.btn-tag.btn-tag-danger {
+  background: #ffffff;
+  color: #eb5757;
+  border: 1px solid rgba(235, 87, 87, 0.35);
+}
+
+button.btn-tag.btn-tag-primary {
+  background: #2f80ed;
+  color: #ffffff;
+  border: 1px solid transparent;
+}

@@ -10,6 +10,10 @@ Page({
   },
 
   onLoad() {
+    if (!wx.cloud) {
+      wx.showToast({ title: "当前基础库不支持云开发", icon: "none" });
+      return;
+    }
     const openid = wx.getStorageSync("openid");
     if (!openid) {
       wx.showToast({ title: "请先在首页登录", icon: "none" });
@@ -31,7 +35,8 @@ Page({
         name: "profile",
         data: { action: "get" },
       });
-      const p = (res.result && res.result.data) || {};
+      const result = res && res.result ? res.result : {};
+      const p = (result && result.data) || {};
       this.setData({
         nickname: p.nickname || this.data.nickname,
         avatarUrl: p.avatarUrl || this.data.avatarUrl,
@@ -48,13 +53,25 @@ Page({
 
   async onChooseAvatar() {
     try {
-      const res = await wx.chooseMedia({
-        count: 1,
-        mediaType: ["image"],
-        sizeType: ["compressed"],
-      });
-      const file = res && res.tempFiles && res.tempFiles[0];
-      const path = file && file.tempFilePath;
+      if (!wx.cloud) {
+        wx.showToast({ title: "当前基础库不支持云开发", icon: "none" });
+        return;
+      }
+
+      // iOS 部分版本对 chooseMedia 兼容性较差，提供 chooseImage 兜底
+      let path = "";
+      if (typeof wx.chooseMedia === "function") {
+        const res = await wx.chooseMedia({
+          count: 1,
+          mediaType: ["image"],
+          sizeType: ["compressed"],
+        });
+        const file = res && res.tempFiles && res.tempFiles[0];
+        path = (file && file.tempFilePath) || "";
+      } else {
+        const res = await wx.chooseImage({ count: 1, sizeType: ["compressed"] });
+        path = (res && res.tempFilePaths && res.tempFilePaths[0]) || "";
+      }
       if (!path) return;
 
       let loadingShown = false;
@@ -62,6 +79,10 @@ Page({
       loadingShown = true;
       try {
         const openid = wx.getStorageSync("openid");
+        if (!openid) {
+          wx.showToast({ title: "请先在首页登录", icon: "none" });
+          return;
+        }
         const ext = (path.split(".").pop() || "jpg").toLowerCase();
         const cloudPath = `avatars/${openid}_${Date.now()}.${ext}`;
         const up = await wx.cloud.uploadFile({ cloudPath, filePath: path });
@@ -78,11 +99,16 @@ Page({
         }
       }
     } catch (e) {
-      // chooseMedia 等异常，未显示 loading，不调用 hideLoading
+      console.error("choose avatar failed", e);
+      wx.showToast({ title: "选择图片失败", icon: "none" });
     }
   },
 
   async onSave() {
+    if (!wx.cloud) {
+      wx.showToast({ title: "当前基础库不支持云开发", icon: "none" });
+      return;
+    }
     const openid = wx.getStorageSync("openid");
     if (!openid) {
       wx.showToast({ title: "请先在首页登录", icon: "none" });
@@ -97,10 +123,14 @@ Page({
     try {
       wx.showLoading({ title: "保存中...", mask: true });
       loadingShown = true;
-      await wx.cloud.callFunction({
+      const res = await wx.cloud.callFunction({
         name: "profile",
         data: { action: "set", nickname, avatarUrl: this.data.avatarUrl || "" },
       });
+      const result = res && res.result ? res.result : {};
+      if (result.code !== 0 && result.code !== undefined) {
+        throw new Error(result.message || "保存失败");
+      }
       saveJSON(STORAGE_KEYS.PROFILE, { nickname, avatarUrl: this.data.avatarUrl || "" });
       wx.showToast({ title: "已保存", icon: "success" });
     } catch (e) {

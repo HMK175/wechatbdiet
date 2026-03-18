@@ -41,8 +41,7 @@
         </view>
       </view>
       <button wx:if="{{!item.systemBuiltIn}}"
-              class="btn btn-danger"
-              size="mini"
+              class="btn-tag btn-tag-danger"
               data-id="{{item.id}}"
               bindtap="onDeleteFoodTap">
         删除

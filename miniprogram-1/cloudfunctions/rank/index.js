@@ -6,6 +6,7 @@ cloud.init({
 
 const db = cloud.database();
 const COLLECTION = "leaderboard_daily";
+const STRENGTH_LATEST = "leaderboard_strength_latest";
 const USERS = "users";
 
 async function attachAvatarTempUrls(rows) {
@@ -95,29 +96,37 @@ exports.main = async (event, context) => {
         }
       }
     } else {
-      // 力量榜：不与日期关联，按用户取最新一条（避免一个用户多天记录挤满榜单）
-      // 关键：必须按 updatedAt 倒序拉取，否则随着数据增多，旧用户记录会因为 limit 被截断而“消失”
+      // 力量榜：不与日期关联。
+      // 优先使用“每用户一条”的最新集合，避免全表扫描/limit 截断导致排行榜抖动。
       let list = [];
       try {
-        const res = await db.collection(COLLECTION).orderBy("updatedAt", "desc").limit(2000).get();
+        const res = await db.collection(STRENGTH_LATEST).orderBy("updatedAt", "desc").limit(500).get();
         list = res.data || [];
       } catch (e) {
-        // 兼容旧数据只存 data.updatedAt / 或不支持排序的情况
-        const res = await db.collection(COLLECTION).limit(2000).get();
-        list = res.data || [];
+        list = [];
       }
 
-      // 若已经按 updatedAt desc 排序，则每个 openid 第一条就是最新
-      const latestByOpenid = new Map();
-      list.forEach((doc) => {
-        const fields = doc.data != null ? doc.data : doc;
-        const openid = fields._openid || doc._openid;
-        if (!openid) return;
-        if (!latestByOpenid.has(openid)) {
-          latestByOpenid.set(openid, doc);
+      if (list.length === 0) {
+        // 兼容旧数据：从 daily 集合按 updatedAt desc 拉取一小段，按 openid 去重（避免扫全表）
+        let recent = [];
+        try {
+          const res = await db.collection(COLLECTION).orderBy("updatedAt", "desc").limit(800).get();
+          recent = res.data || [];
+        } catch (e) {
+          const res = await db.collection(COLLECTION).limit(800).get();
+          recent = res.data || [];
         }
-      });
-      rawList = Array.from(latestByOpenid.values());
+        const latestByOpenid = new Map();
+        recent.forEach((doc) => {
+          const fields = doc.data != null ? doc.data : doc;
+          const openid = fields._openid || doc._openid;
+          if (!openid) return;
+          if (!latestByOpenid.has(openid)) latestByOpenid.set(openid, doc);
+        });
+        rawList = Array.from(latestByOpenid.values());
+      } else {
+        rawList = list;
+      }
     }
     // 扁平化：云文档可能是 { _id, data: { ... } } 或顶层即字段，统一成 { _id, ...fields }
     const flattened = (rawList || []).map((doc) => {
@@ -215,6 +224,21 @@ exports.main = async (event, context) => {
           });
       } else {
         throw e;
+      }
+    }
+
+    // 同步写入“最新力量”集合（每用户一条），供力量榜读取
+    // 仅当三大项至少有一项有值时写入，避免被仅 kcal 上传覆盖掉力量
+    if ((Number(bench_1rm) || 0) > 0 || (Number(deadlift_1rm) || 0) > 0 || (Number(squat_1rm) || 0) > 0) {
+      const strengthDocId = `${openid}`;
+      try {
+        await db.collection(STRENGTH_LATEST).doc(strengthDocId).set({ data: { ...payload } });
+      } catch (e) {
+        if (e.errCode === 6 || /document exists/i.test(e.errMsg || "")) {
+          await db.collection(STRENGTH_LATEST).doc(strengthDocId).update({ data: { ...payload } });
+        } else {
+          // ignore
+        }
       }
     }
 

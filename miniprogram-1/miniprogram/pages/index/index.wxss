@@ -490,30 +490,7 @@ page {
   box-sizing: border-box;
 }
 
-.btn-danger {
-  background: #ffffff;
-  color: #eb5757;
-  border-radius: 999rpx;
-  border: 1px solid rgba(235, 87, 87, 0.35);
-  /* 小标签风格：框和字体整体变小，同时保持居中且不裁字 */
-  height: 40rpx;
-  min-width: 76rpx;
-  padding: 0 12rpx;
-  font-size: 18rpx;
-  line-height: 40rpx;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-/* button 默认样式重置，避免被拉伸/撑开 */
-button.btn-danger {
-  width: auto;
-  flex: 0 0 auto;
-  margin: 0;
-}
+/* 删除按钮已统一使用全局 .btn-tag（见 app.wxss） */
 
 .entries {
   border-top: 1px dashed #e0e4ee;

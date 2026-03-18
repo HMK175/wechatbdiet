@@ -116,3 +116,5 @@ page {
   padding: 0 16rpx;
 }
 
+/* 删除按钮已统一使用全局 .btn-tag（见 app.wxss） */
+

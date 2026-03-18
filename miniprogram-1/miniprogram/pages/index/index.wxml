@@ -237,7 +237,7 @@
               {{entry.text}} · {{entry.subText}}
             </view>
           </view>
-              <button class="btn-danger"
+              <button class="btn-tag btn-tag-danger"
                       data-meal-id="{{item.id}}"
                       data-entry-id="{{entry.id}}"
                       bindtap="onDeleteEntryTap">

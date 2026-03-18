@@ -20,7 +20,10 @@
     - `utils/quota.js`：配额表数据与算法（从 Web 版迁移）
   - 云函数（在 `cloudfunctions` 下）：
     - `login`：返回当前用户 openid
-    - `rank`：排行榜读写（集合名 `leaderboard_daily`；get 时兼容嵌套/扁平文档并扁平化返回）
+    - `rank`：排行榜读写
+      - `leaderboard_daily`：每日 kcal（按 date）
+      - `leaderboard_strength_latest`：力量榜（每用户一条最新）
+      - get 会兼容嵌套/扁平文档并扁平化返回；并将 `cloud://` 头像 fileID 转换为临时 https 链接
     - `profile`：用户昵称、头像存取（集合 `users`）
 
 ## 当前小程序功能概况
@@ -74,7 +77,14 @@
    - 表格式展示：列依次为 排名 / 头像 / 用户名 / 数据列 / 体重。
      - **今日 kcal**：数据列为 kcal、P、C、F；体重仅展示；默认按 kcal 降序，可点表头按 P/C/F 排序。
      - **力量（三大项）**：数据列为 卧推、硬拉、深蹲、系数（三大项和÷体重）、体重；默认按系数降序，可点表头按单项或体重排序。
-   - 数据上传来源：**kcal** 由首页在登录后自动上传（`scheduleAutoUploadKcal`）；**力量** 由 `pages/strength/index` 页录入卧推/硬拉/深蹲后手动上传到 `rank` 的 `upload`。
+   - 与日期的关系：
+     - **kcal 榜**与日期关联（传 date）
+     - **力量榜**不与日期关联（读取 `leaderboard_strength_latest` 每人最新一条）
+   - 数据上传来源：**kcal** 由首页在登录后自动上传（`scheduleAutoUploadKcal`，会避免用全 0 覆盖云端）；**力量** 由 `pages/strength/index` 手动上传，云函数会同步写入 `leaderboard_strength_latest`。
+
+## UI 约定（样式复用）
+
+- 删除等“小标签按钮”统一使用全局样式：`button.btn-tag`，危险态为 `btn-tag-danger`（定义在 `app.wxss`），避免各页面各写一套按钮导致样式不一致或被系统 button 样式覆盖。
 
 ## 下次接入时需要注意的点
 

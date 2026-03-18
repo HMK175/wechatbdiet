@@ -140,9 +140,11 @@ Page({
         const data = r && r.data != null ? r.data : {};
         const flat = r && typeof r === "object" ? r : {};
         const id = flat._id != null ? String(flat._id) : (data._id != null ? String(data._id) : "");
+        const openid = flat._openid ?? data._openid ?? "";
+        const dateKey = flat.date ?? data.date ?? "";
         return {
-          _id: id || `row_${Math.random().toString(36).slice(2)}`,
-          _openid: flat._openid ?? data._openid,
+          _id: id || (openid ? String(openid) : (dateKey ? String(dateKey) : "row")),
+          _openid: openid,
           date: flat.date ?? data.date,
           bodyweight_kg: flat.bodyweight_kg ?? data.bodyweight_kg ?? null,
           kcal: flat.kcal ?? data.kcal ?? null,
